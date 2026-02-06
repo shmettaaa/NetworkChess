@@ -4,7 +4,8 @@ using System.Text;
 
 namespace NetworkChess.ChessModels
 {
-    internal class King
+    internal class King : Piece
     {
+        public King(Position pos, PieceColor color) : base(pos, color) { }
     }
 }

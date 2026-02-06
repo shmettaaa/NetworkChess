@@ -4,7 +4,9 @@ using System.Text;
 
 namespace NetworkChess.ChessModels
 {
-    internal class Bishop
+    internal class Bishop : Piece
     {
+
+        public Bishop(Position pos, PieceColor color) : base(pos, color) { }
     }
 }

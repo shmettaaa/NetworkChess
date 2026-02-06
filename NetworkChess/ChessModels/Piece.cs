@@ -8,7 +8,7 @@ namespace NetworkChess.ChessModels
 
     internal abstract class Piece
     {
-
+        public abstract void Move();
         public Position BoardPosition
         {
             get;
@@ -50,4 +50,10 @@ namespace NetworkChess.ChessModels
         White,
         Black
     }
+
+
+    
+
+
+
 }
