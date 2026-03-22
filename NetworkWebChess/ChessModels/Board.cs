@@ -2,12 +2,13 @@
 using System.Collections.Generic;
 using System.Security.AccessControl;
 using System.Text;
-using System.Windows.Controls;
 
 namespace NetworkChess.ChessModels
 {
     internal class Board
     {
+
+
         private readonly Piece?[,] pieces;
 
         public Board()
@@ -16,6 +17,8 @@ namespace NetworkChess.ChessModels
             InitializeBoard();
            
         }
+
+
         private void InitializeBoard()
         {
             pieces[0, 0] = new Rook(new Position { Row = 0, Col = 0 }, PieceColor.Black);
@@ -45,6 +48,8 @@ namespace NetworkChess.ChessModels
                 pieces[6, i] = new Pawn(new Position { Row = 6, Col = i }, PieceColor.White);
             }
         }
+
+
         public Piece? GetPiece(Position pos)
         {
             if (pos.Row > 7 || pos.Row < 0 || pos.Col < 0 || pos.Col > 7)
@@ -55,6 +60,52 @@ namespace NetworkChess.ChessModels
         }
 
 
-    
+        private Position GetKingPosition(PieceColor kingColor)
+        {
+            for (int r = 0; r < 8; r++)
+            {
+                for (int c = 0; c < 8; c++)
+                {
+                    Piece? piece = pieces[r, c];
+                    if (piece is King && piece.Color == kingColor)
+                    {
+                        return new Position { Row = r, Col = c };
+                    }
+                }
+            }
+
+            throw new InvalidOperationException($"Король цвета {kingColor} не найден на доске");
+        }
+
+
+        public bool IsInCheck(PieceColor kingColor)
+        {
+            Position? kingPosition = GetKingPosition(kingColor);
+
+            PieceColor opponentColor = kingColor == PieceColor.White ? PieceColor.Black : PieceColor.White;
+
+            for (int r = 0; r < 8; r++)
+            {
+                for (int c = 0; c < 8; c++)
+                {
+                    Piece? piece = pieces[r, c];
+                    if (piece != null && piece.Color == opponentColor)
+                    {
+                        List<Position> potential = piece.GetPotentialMoves(this);
+
+                        if (potential.Any(p => p.Row == kingPosition.Value.Row && p.Col == kingPosition.Value.Col))
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
+
+
+
+
     }
 }
