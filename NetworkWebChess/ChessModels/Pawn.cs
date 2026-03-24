@@ -9,82 +9,73 @@ namespace NetworkChess.ChessModels
 
         public Pawn(Position pos, PieceColor color) : base(pos, color) { }
 
-        public override List<Position> GetPotentialMoves(Board board)
+        public override List<Move> GetPotentialMoves(Board board)
         {
-            List<Position> pieceList = new List<Position>();
+            List<Move> moves = new List<Move>();
             int x = BoardPosition.Row;
             int y = BoardPosition.Col;
 
             int direction = (Color == PieceColor.White) ? -1 : 1;
 
             Position forwardOne = new Position { Row = x + direction, Col = y };
-
             if (forwardOne.Row >= 0 && forwardOne.Row <= 7 && forwardOne.Col >= 0 && forwardOne.Col <= 7)
             {
-                Piece? pieceOnForward = board.GetPiece(forwardOne);
+                Piece? pieceOnTarget = board.GetPiece(forwardOne);
 
-                bool isOwnPiece = pieceOnForward != null && pieceOnForward.Color == Color;
-
-                if (!forwardOne.Equals(BoardPosition) && !isOwnPiece)
+                if (pieceOnTarget == null || pieceOnTarget.Color != Color)
                 {
-                    pieceList.Add(forwardOne);
+                    Move move = new Move(this, BoardPosition, forwardOne);
+                    if (pieceOnTarget != null)
+                        move.SetCapture(pieceOnTarget);
+
+                    moves.Add(move);
                 }
             }
 
-            bool isOnStartingRow = (Color == PieceColor.White && x == 6) || (Color == PieceColor.Black && x == 1);
-
-            if (isOnStartingRow)
+            bool isStartingRow = (Color == PieceColor.White && x == 6) || (Color == PieceColor.Black && x == 1);
+            if (isStartingRow)
             {
                 Position forwardTwo = new Position { Row = x + 2 * direction, Col = y };
-                Position forwardOneAgain = new Position { Row = x + direction, Col = y };
+                Position forwardOneCheck = new Position { Row = x + direction, Col = y };
 
                 if (forwardTwo.Row >= 0 && forwardTwo.Row <= 7 && forwardTwo.Col >= 0 && forwardTwo.Col <= 7)
                 {
-                    Piece? pieceOnOne = board.GetPiece(forwardOneAgain);
-                    Piece? pieceOnTwo = board.GetPiece(forwardTwo);
+                    Piece? p1 = board.GetPiece(forwardOneCheck);
+                    Piece? p2 = board.GetPiece(forwardTwo);
 
-                    if (pieceOnOne == null && pieceOnTwo == null)
+                    if (p1 == null && p2 == null)
                     {
-                        bool isOwnPieceOnTwo = pieceOnTwo != null && pieceOnTwo.Color == Color;
-
-                        if (!forwardTwo.Equals(BoardPosition) && !isOwnPieceOnTwo)
-                        {
-                            pieceList.Add(forwardTwo);
-                        }
+                        Move move = new Move(this, BoardPosition, forwardTwo);
+                        moves.Add(move);
                     }
                 }
             }
 
             Position captureLeft = new Position { Row = x + direction, Col = y - 1 };
-
             if (captureLeft.Row >= 0 && captureLeft.Row <= 7 && captureLeft.Col >= 0 && captureLeft.Col <= 7)
             {
                 Piece? pieceLeft = board.GetPiece(captureLeft);
-
-                bool isOwnPieceLeft = pieceLeft != null && pieceLeft.Color == Color;
-
-                if (!captureLeft.Equals(BoardPosition) && !isOwnPieceLeft)
+                if (pieceLeft != null && pieceLeft.Color != Color)
                 {
-                    pieceList.Add(captureLeft);
+                    Move move = new Move(this, BoardPosition, captureLeft);
+                    move.SetCapture(pieceLeft);
+                    moves.Add(move);
                 }
             }
 
             Position captureRight = new Position { Row = x + direction, Col = y + 1 };
-
             if (captureRight.Row >= 0 && captureRight.Row <= 7 && captureRight.Col >= 0 && captureRight.Col <= 7)
             {
                 Piece? pieceRight = board.GetPiece(captureRight);
-
-                bool isOwnPieceRight = pieceRight != null && pieceRight.Color == Color;
-
-                if (!captureRight.Equals(BoardPosition) && !isOwnPieceRight)
+                if (pieceRight != null && pieceRight.Color != Color)
                 {
-                    pieceList.Add(captureRight);
+                    Move move = new Move(this, BoardPosition, captureRight);
+                    move.SetCapture(pieceRight);
+                    moves.Add(move);
                 }
             }
 
-
-            return pieceList;
+            return moves;
         }
 
 

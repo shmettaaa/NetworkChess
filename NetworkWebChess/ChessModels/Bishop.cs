@@ -10,9 +10,9 @@ namespace NetworkChess.ChessModels
         public Bishop(Position pos, PieceColor color) : base(pos, color) { }
 
 
-        public override List<Position> GetPotentialMoves(Board board)
+        public override List<Move> GetPotentialMoves(Board board)
         {
-            List<Position> pieceList = new List<Position>();
+            List<Move> moves = new List<Move>();
             int x = BoardPosition.Row;
             int y = BoardPosition.Col;
 
@@ -35,7 +35,11 @@ namespace NetworkChess.ChessModels
 
                 if (!currPos.Equals(BoardPosition) && !isOwnPiece)
                 {
-                    pieceList.Add(currPos);
+                    Move move = new Move(this, BoardPosition, currPos);
+                    if (pieceOnCell != null)
+                        move.SetCapture(pieceOnCell);
+
+                    moves.Add(move);
                 }
 
                 if (pieceOnCell != null)
@@ -63,7 +67,11 @@ namespace NetworkChess.ChessModels
 
                 if (!currPos.Equals(BoardPosition) && !isOwnPiece)
                 {
-                    pieceList.Add(currPos);
+                    Move move = new Move(this, BoardPosition, currPos);
+                    if (pieceOnCell != null)
+                        move.SetCapture(pieceOnCell);
+
+                    moves.Add(move);
                 }
 
                 if (pieceOnCell != null)
@@ -91,7 +99,11 @@ namespace NetworkChess.ChessModels
 
                 if (!currPos.Equals(BoardPosition) && !isOwnPiece)
                 {
-                    pieceList.Add(currPos);
+                    Move move = new Move(this, BoardPosition, currPos);
+                    if (pieceOnCell != null)
+                        move.SetCapture(pieceOnCell);
+
+                    moves.Add(move);
                 }
 
                 if (pieceOnCell != null)
@@ -119,7 +131,11 @@ namespace NetworkChess.ChessModels
 
                 if (!currPos.Equals(BoardPosition) && !isOwnPiece)
                 {
-                    pieceList.Add(currPos);
+                    Move move = new Move(this, BoardPosition, currPos);
+                    if (pieceOnCell != null)
+                        move.SetCapture(pieceOnCell);
+
+                    moves.Add(move);
                 }
 
                 if (pieceOnCell != null)
@@ -128,7 +144,7 @@ namespace NetworkChess.ChessModels
                 }
             }
 
-            return pieceList;
+            return moves;
         }
 
 

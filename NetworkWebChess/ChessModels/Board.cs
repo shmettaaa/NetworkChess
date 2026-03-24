@@ -5,7 +5,7 @@ using System.Text;
 
 namespace NetworkChess.ChessModels
 {
-    internal class Board
+    public class Board
     {
 
 
@@ -80,22 +80,27 @@ namespace NetworkChess.ChessModels
 
         public bool IsInCheck(PieceColor kingColor)
         {
-            Position? kingPosition = GetKingPosition(kingColor);
-
-            PieceColor opponentColor = kingColor == PieceColor.White ? PieceColor.Black : PieceColor.White;
+            Position kingPosition = GetKingPosition(kingColor);
+            PieceColor opponentColor = (kingColor == PieceColor.White) ? PieceColor.Black : PieceColor.White;
 
             for (int r = 0; r < 8; r++)
             {
                 for (int c = 0; c < 8; c++)
                 {
-                    Piece? piece = pieces[r, c];
-                    if (piece != null && piece.Color == opponentColor)
-                    {
-                        List<Position> potential = piece.GetPotentialMoves(this);
+                    Piece? attacker = pieces[r, c];
 
-                        if (potential.Any(p => p.Row == kingPosition.Value.Row && p.Col == kingPosition.Value.Col))
+                    if (attacker != null && attacker.Color == opponentColor)
+                    {
+                        List<Move> potentialMoves = attacker.GetPotentialMoves(this);
+
+                        for (int i = 0; i < potentialMoves.Count; i++)
                         {
-                            return true;
+                            Move move = potentialMoves[i];
+
+                            if (move.To.Row == kingPosition.Row && move.To.Col == kingPosition.Col)
+                            {
+                                return true;
+                            }
                         }
                     }
                 }
@@ -152,6 +157,32 @@ namespace NetworkChess.ChessModels
             }
 
             pieces[pos.Row, pos.Col] = null;
+        }
+
+
+        public List<Move> GetAllLegalMoves(PieceColor color)
+        {
+            List<Move> allLegalMoves = new List<Move>();
+
+            for (int r = 0; r < 8; r++)
+            {
+                for (int c = 0; c < 8; c++)
+                {
+                    Piece? piece = pieces[r, c];
+
+                    if (piece != null && piece.Color == color)
+                    {
+                        List<Move> legalMovesForPiece = piece.GetLegalMoves(this);
+
+                        for (int i = 0; i < legalMovesForPiece.Count; i++)
+                        {
+                            allLegalMoves.Add(legalMovesForPiece[i]);
+                        }
+                    }
+                }
+            }
+
+            return allLegalMoves;
         }
 
 

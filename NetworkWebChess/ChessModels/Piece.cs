@@ -6,10 +6,10 @@ namespace NetworkChess.ChessModels
 {
 
 
-    internal abstract class Piece
+    public abstract class Piece
     {
+
         
-        public abstract List<Position> GetPotentialMoves(Board board);
         public Position BoardPosition
         {
             get;
@@ -29,26 +29,29 @@ namespace NetworkChess.ChessModels
         public abstract Piece Clone();
 
 
-        public List<Position> GetLegalMoves(Board board)
+
+        public abstract List<Move> GetPotentialMoves(Board board);
+
+        public List<Move> GetLegalMoves(Board board)
         {
-            List<Position> potentialMoves = GetPotentialMoves(board);
-            List<Position> legalMoves = new List<Position>();
+            List<Move> potentialMoves = GetPotentialMoves(board);
+            List<Move> legalMoves = new List<Move>();
 
             for (int i = 0; i < potentialMoves.Count; i++)
             {
-                Position target = potentialMoves[i];
+                Move move = potentialMoves[i];
 
                 Board tempBoard = board.Clone();
 
-                tempBoard.RemovePiece(BoardPosition);
+                tempBoard.RemovePiece(move.From);
 
-                Piece movingPiece = this.Clone();
-                movingPiece.BoardPosition = target;
-                tempBoard.PlacePiece(movingPiece, target);
+                Piece movingPieceCopy = move.MovingPiece.Clone();
+                movingPieceCopy.BoardPosition = move.To;
+                tempBoard.PlacePiece(movingPieceCopy, move.To);
 
                 if (!tempBoard.IsInCheck(Color))
                 {
-                    legalMoves.Add(target);
+                    legalMoves.Add(move);
                 }
             }
 
@@ -60,7 +63,7 @@ namespace NetworkChess.ChessModels
 
 
 
-    struct Position
+    public struct Position
     {
       public int Row
         {
