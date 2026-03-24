@@ -9,6 +9,7 @@ namespace NetworkChess.ChessModels
 
         public Bishop(Position pos, PieceColor color) : base(pos, color) { }
 
+
         public override List<Position> GetPotentialMoves(Board board)
         {
             List<Position> pieceList = new List<Position>();
@@ -129,5 +130,17 @@ namespace NetworkChess.ChessModels
 
             return pieceList;
         }
+
+
+        public override Piece Clone()
+        {
+            return new Bishop(BoardPosition, Color);
+        }
+
+
+
+
+
+
     }
 }

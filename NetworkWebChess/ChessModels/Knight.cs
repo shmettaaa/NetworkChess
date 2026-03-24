@@ -40,5 +40,9 @@ namespace NetworkChess.ChessModels
         }
 
 
+        public override Piece Clone()
+        {
+            return new Knight(BoardPosition, Color);
+        }
     }
 }

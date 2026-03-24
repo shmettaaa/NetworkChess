@@ -105,6 +105,54 @@ namespace NetworkChess.ChessModels
         }
 
 
+        public Board Clone()
+        {
+            Board clone = new Board();
+
+            for (int r = 0; r < 8; r++)
+            {
+                for (int c = 0; c < 8; c++)
+                {
+                    Piece? originalPiece = pieces[r, c];
+                    if (originalPiece != null)
+                    {
+                        Piece clonedPiece = originalPiece.Clone();
+                        clone.pieces[r, c] = clonedPiece;
+                        clonedPiece.BoardPosition = new Position { Row = r, Col = c };
+                    }
+                }
+            }
+
+            return clone;
+        }
+
+
+        public void PlacePiece(Piece piece, Position pos)
+        {
+            if (piece == null)
+            {
+                throw new ArgumentNullException();
+            }
+
+            if (pos.Row < 0 || pos.Row > 7 || pos.Col < 0 || pos.Col > 7)
+            {
+                throw new ArgumentOutOfRangeException();
+            }
+
+            pieces[pos.Row, pos.Col] = piece;
+
+            piece.BoardPosition = pos;
+        }
+
+        public void RemovePiece(Position pos)
+        {
+            if (pos.Row < 0 || pos.Row > 7 || pos.Col < 0 || pos.Col > 7)
+            {
+                throw new ArgumentOutOfRangeException();
+            }
+
+            pieces[pos.Row, pos.Col] = null;
+        }
 
 
     }

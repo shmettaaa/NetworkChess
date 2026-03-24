@@ -241,5 +241,11 @@ namespace NetworkChess.ChessModels
 
             return pieceList;
         }
+
+
+        public override Piece Clone()
+        {
+            return new Queen(BoardPosition, Color);
+        }
     }
 }
