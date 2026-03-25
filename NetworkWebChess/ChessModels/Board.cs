@@ -1,4 +1,5 @@
-﻿using System;
+﻿using NetworkWebChess.ChessModels;
+using System;
 using System.Collections.Generic;
 using System.Security.AccessControl;
 using System.Text;
@@ -184,6 +185,95 @@ namespace NetworkChess.ChessModels
 
             return allLegalMoves;
         }
+
+        public bool IsCheckmate(PieceColor kingColor)
+        {
+            if (!IsInCheck(kingColor))
+            {
+                return false;
+            }
+
+            List<Move> allLegalMoves = GetAllLegalMoves(kingColor);
+
+            return allLegalMoves.Count == 0;
+        }
+
+        public bool IsStalemate(PieceColor kingColor)
+        {
+            if (IsInCheck(kingColor))
+            {
+                return false;
+            }
+
+            List<Move> allLegalMoves = GetAllLegalMoves(kingColor);
+
+            return allLegalMoves.Count == 0;
+        }
+
+        public GameState GetGameState(PieceColor kingColor)
+        {
+            if (IsCheckmate(kingColor))
+                return GameState.Checkmate;
+
+            if (IsStalemate(kingColor))
+                return GameState.Stalemate;
+
+            if (IsInCheck(kingColor))
+                return GameState.Check;
+
+            return GameState.Normal;
+        }
+
+
+        
+        public void MakeMove(Move move)
+        {
+            if (move == null)
+                throw new ArgumentNullException(nameof(move));
+
+            Piece? pieceAtFrom = GetPiece(move.From);
+            if (pieceAtFrom == null || pieceAtFrom != move.MovingPiece)
+            {
+                throw new InvalidOperationException();
+            }
+
+            Piece? capturedPiece = GetPiece(move.To);
+            if (capturedPiece != null)
+            {
+                move.SetCapture(capturedPiece);
+            }
+
+            RemovePiece(move.From);
+
+            if (move.MovingPiece is Pawn &&
+                ((move.MovingPiece.Color == PieceColor.White && move.To.Row == 0) ||
+                 (move.MovingPiece.Color == PieceColor.Black && move.To.Row == 7)))
+            {
+                move.SetPromotion(move.PromotionPieceType);
+
+                Piece newPiece = CreatePromotionPiece(move.MovingPiece.Color, move.PromotionPieceType, move.To);
+                PlacePiece(newPiece, move.To);
+            }
+            else
+            {
+                PlacePiece(move.MovingPiece, move.To);
+            }
+        }
+
+
+        private Piece CreatePromotionPiece(PieceColor color, PieceType type, Position pos)
+        {
+            return type switch
+            {
+                PieceType.Queen => new Queen(pos, color),
+                PieceType.Rook => new Rook(pos, color),
+                PieceType.Bishop => new Bishop(pos, color),
+                PieceType.Knight => new Knight(pos, color),
+                _ => new Queen(pos, color)   
+            };
+        }
+
+
 
 
     }

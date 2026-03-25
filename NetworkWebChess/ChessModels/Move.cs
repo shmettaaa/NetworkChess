@@ -1,4 +1,5 @@
-﻿
+﻿using NetworkChess.ChessModels;
+using NetworkWebChess.ChessModels;
 
 namespace NetworkChess.ChessModels
 {
@@ -10,6 +11,8 @@ namespace NetworkChess.ChessModels
         public Piece? CapturedPiece { get; private set; }
 
         public bool IsPromotion { get; private set; }
+        public PieceType PromotionPieceType { get; private set; } = PieceType.Queen;
+
         public bool IsCastling { get; private set; }
         public bool IsEnPassant { get; private set; }
 
@@ -25,14 +28,20 @@ namespace NetworkChess.ChessModels
             CapturedPiece = capturedPiece;
         }
 
-        public void SetPromotion()
+        public void SetPromotion(PieceType promotionPieceType = PieceType.Queen)
         {
             IsPromotion = true;
+            PromotionPieceType = promotionPieceType;
         }
 
-        public override string ToString()
+        public void SetCastling()
         {
-            return $"{MovingPiece.GetType().Name} {From} → {To}";
+            IsCastling = true;
+        }
+
+        public void SetEnPassant()
+        {
+            IsEnPassant = true;
         }
     }
 }
