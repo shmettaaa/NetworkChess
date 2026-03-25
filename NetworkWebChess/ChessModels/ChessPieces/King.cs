@@ -1,12 +1,14 @@
-﻿using System;
+﻿using NetworkChess.ChessModels;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace NetworkChess.ChessModels
+namespace NetworkWebChess.ChessModels.ChessPieces
 {
-    internal class Knight:Piece
+    internal class King : Piece
     {
-        public Knight(Position pos, PieceColor color) : base(pos, color) { }
+        public King(Position pos, PieceColor color) : base(pos, color) { }
+
 
         public override List<Move> GetPotentialMoves(Board board)
         {
@@ -14,8 +16,8 @@ namespace NetworkChess.ChessModels
             int x = BoardPosition.Row;
             int y = BoardPosition.Col;
 
-            int[] dx = { -2, -2, -1, -1, 1, 1, 2, 2 };
-            int[] dy = { -1, 1, -2, 2, -2, 2, -1, 1 };
+            int[] dx = { -1, -1, -1, 0, 0, 1, 1, 1 };
+            int[] dy = { -1, 0, 1, -1, 1, -1, 0, 1 };
 
             for (int i = 0; i < 8; i++)
             {
@@ -38,13 +40,32 @@ namespace NetworkChess.ChessModels
                 }
             }
 
+            if (board.CanCastleKingside(Color))
+            {
+                Position kingTo = new Position { Row = x, Col = 6 };   
+                Move castlingMove = new Move(this, BoardPosition, kingTo);
+                castlingMove.SetCastling();
+                moves.Add(castlingMove);
+            }
+
+            if (board.CanCastleQueenside(Color))
+            {
+                Position kingTo = new Position { Row = x, Col = 2 };  
+                Move castlingMove = new Move(this, BoardPosition, kingTo);
+                castlingMove.SetCastling();
+                moves.Add(castlingMove);
+            }
+
             return moves;
         }
 
-
         public override Piece Clone()
         {
-            return new Knight(BoardPosition, Color);
+            return new King(BoardPosition, Color);
         }
+
+
+
+
     }
 }

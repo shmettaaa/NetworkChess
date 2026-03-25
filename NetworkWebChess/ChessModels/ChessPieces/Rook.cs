@@ -1,8 +1,9 @@
-﻿using System;
+﻿using NetworkChess.ChessModels;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace NetworkChess.ChessModels
+namespace NetworkWebChess.ChessModels.ChessPieces
 {
     internal class Rook:Piece
     {

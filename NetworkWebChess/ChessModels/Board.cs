@@ -1,4 +1,5 @@
 ﻿using NetworkWebChess.ChessModels;
+using NetworkWebChess.ChessModels.ChessPieces;
 using System;
 using System.Collections.Generic;
 using System.Security.AccessControl;
@@ -229,7 +230,7 @@ namespace NetworkChess.ChessModels
         public void MakeMove(Move move)
         {
             if (move == null)
-                throw new ArgumentNullException(nameof(move));
+                throw new ArgumentNullException();
 
             Piece? pieceAtFrom = GetPiece(move.From);
             if (pieceAtFrom == null || pieceAtFrom != move.MovingPiece)
@@ -270,29 +271,25 @@ namespace NetworkChess.ChessModels
 
                 if (isKingside)
                 {
-                    Position rookFrom = new Position { Row = row, Col = 7 };
-                    Position rookTo = new Position { Row = row, Col = 5 };
-
-                    Piece? rook = GetPiece(rookFrom);
+                    Piece? rook = GetPiece(new Position { Row = row, Col = 7 });
                     if (rook != null)
                     {
-                        RemovePiece(rookFrom);
-                        PlacePiece(rook, rookTo);
+                        RemovePiece(new Position { Row = row, Col = 7 });
+                        PlacePiece(rook, new Position { Row = row, Col = 5 });
                     }
                 }
                 else
                 {
-                    Position rookFrom = new Position { Row = row, Col = 0 };
-                    Position rookTo = new Position { Row = row, Col = 3 };
-
-                    Piece? rook = GetPiece(rookFrom);
+                    Piece? rook = GetPiece(new Position { Row = row, Col = 0 });
                     if (rook != null)
                     {
-                        RemovePiece(rookFrom);
-                        PlacePiece(rook, rookTo);
+                        RemovePiece(new Position { Row = row, Col = 0 });
+                        PlacePiece(rook, new Position { Row = row, Col = 3 });
                     }
                 }
             }
+
+            UpdateCastlingRights(move);
         }
 
 
@@ -319,6 +316,46 @@ namespace NetworkChess.ChessModels
         private bool blackKingsideRookMoved = false;   
         private bool blackQueensideRookMoved = false;
 
+
+
+        private void UpdateCastlingRights(Move move)
+        {
+            if (move.MovingPiece is King)
+            {
+                if (move.MovingPiece.Color == PieceColor.White)
+                    whiteKingMoved = true;
+                else
+                    blackKingMoved = true;
+            }
+
+            if (move.MovingPiece is Rook)
+            {
+                if (move.MovingPiece.Color == PieceColor.White)
+                {
+                    if (move.From.Col == 0) whiteQueensideRookMoved = true;  
+                    if (move.From.Col == 7) whiteKingsideRookMoved = true;   
+                }
+                else 
+                {
+                    if (move.From.Col == 0) blackQueensideRookMoved = true;  
+                    if (move.From.Col == 7) blackKingsideRookMoved = true;  
+                }
+            }
+
+            if (move.CapturedPiece is Rook)
+            {
+                if (move.CapturedPiece.Color == PieceColor.White)
+                {
+                    if (move.To.Col == 0) whiteQueensideRookMoved = true;
+                    if (move.To.Col == 7) whiteKingsideRookMoved = true;
+                }
+                else
+                {
+                    if (move.To.Col == 0) blackQueensideRookMoved = true;
+                    if (move.To.Col == 7) blackKingsideRookMoved = true;
+                }
+            }
+        }
 
         public bool CanCastleKingside(PieceColor color)
         {

@@ -1,5 +1,5 @@
-﻿using NetworkChess.ChessModels;
-using NetworkWebChess.ChessModels;
+﻿using NetworkWebChess.ChessModels;
+using NetworkWebChess.ChessModels.ChessPieces;
 
 namespace NetworkChess.ChessModels
 {
