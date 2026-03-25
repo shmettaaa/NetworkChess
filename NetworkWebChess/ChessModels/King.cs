@@ -39,13 +39,32 @@ namespace NetworkChess.ChessModels
                 }
             }
 
+            if (board.CanCastleKingside(Color))
+            {
+                Position kingTo = new Position { Row = x, Col = 6 };   
+                Move castlingMove = new Move(this, BoardPosition, kingTo);
+                castlingMove.SetCastling();
+                moves.Add(castlingMove);
+            }
+
+            if (board.CanCastleQueenside(Color))
+            {
+                Position kingTo = new Position { Row = x, Col = 2 };  
+                Move castlingMove = new Move(this, BoardPosition, kingTo);
+                castlingMove.SetCastling();
+                moves.Add(castlingMove);
+            }
+
             return moves;
         }
-
 
         public override Piece Clone()
         {
             return new King(BoardPosition, Color);
         }
+
+
+
+
     }
 }

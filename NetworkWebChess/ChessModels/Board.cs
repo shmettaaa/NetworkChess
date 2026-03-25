@@ -225,7 +225,7 @@ namespace NetworkChess.ChessModels
         }
 
 
-        
+
         public void MakeMove(Move move)
         {
             if (move == null)
@@ -243,20 +243,55 @@ namespace NetworkChess.ChessModels
                 move.SetCapture(capturedPiece);
             }
 
-            RemovePiece(move.From);
-
-            if (move.MovingPiece is Pawn &&
-                ((move.MovingPiece.Color == PieceColor.White && move.To.Row == 0) ||
-                 (move.MovingPiece.Color == PieceColor.Black && move.To.Row == 7)))
+            if (!move.IsCastling)
             {
-                move.SetPromotion(move.PromotionPieceType);
+                RemovePiece(move.From);
 
-                Piece newPiece = CreatePromotionPiece(move.MovingPiece.Color, move.PromotionPieceType, move.To);
-                PlacePiece(newPiece, move.To);
+                if (move.MovingPiece is Pawn &&
+                    ((move.MovingPiece.Color == PieceColor.White && move.To.Row == 0) ||
+                     (move.MovingPiece.Color == PieceColor.Black && move.To.Row == 7)))
+                {
+                    move.SetPromotion();
+                    Piece newPiece = CreatePromotionPiece(move.MovingPiece.Color, move.PromotionPieceType, move.To);
+                    PlacePiece(newPiece, move.To);
+                }
+                else
+                {
+                    PlacePiece(move.MovingPiece, move.To);
+                }
             }
             else
             {
+                int row = (move.MovingPiece.Color == PieceColor.White) ? 7 : 0;
+                bool isKingside = (move.To.Col == 6);
+
+                RemovePiece(move.From);
                 PlacePiece(move.MovingPiece, move.To);
+
+                if (isKingside)
+                {
+                    Position rookFrom = new Position { Row = row, Col = 7 };
+                    Position rookTo = new Position { Row = row, Col = 5 };
+
+                    Piece? rook = GetPiece(rookFrom);
+                    if (rook != null)
+                    {
+                        RemovePiece(rookFrom);
+                        PlacePiece(rook, rookTo);
+                    }
+                }
+                else
+                {
+                    Position rookFrom = new Position { Row = row, Col = 0 };
+                    Position rookTo = new Position { Row = row, Col = 3 };
+
+                    Piece? rook = GetPiece(rookFrom);
+                    if (rook != null)
+                    {
+                        RemovePiece(rookFrom);
+                        PlacePiece(rook, rookTo);
+                    }
+                }
             }
         }
 
@@ -272,6 +307,72 @@ namespace NetworkChess.ChessModels
                 _ => new Queen(pos, color)   
             };
         }
+
+
+        //Begining of the Castling Logic
+
+        private bool whiteKingMoved = false;
+        private bool blackKingMoved = false;
+
+        private bool whiteKingsideRookMoved = false;   
+        private bool whiteQueensideRookMoved = false;  
+        private bool blackKingsideRookMoved = false;   
+        private bool blackQueensideRookMoved = false;
+
+
+        public bool CanCastleKingside(PieceColor color)
+        {
+            if (color == PieceColor.White)
+            {
+                if (whiteKingMoved || whiteKingsideRookMoved) return false;
+                if (GetPiece(new Position { Row = 7, Col = 5 }) != null) return false; 
+                if (GetPiece(new Position { Row = 7, Col = 6 }) != null) return false; 
+            }
+            else 
+            {
+                if (blackKingMoved || blackKingsideRookMoved) return false;
+                if (GetPiece(new Position { Row = 0, Col = 5 }) != null) return false; 
+                if (GetPiece(new Position { Row = 0, Col = 6 }) != null) return false; 
+            }
+
+            return !IsInCheck(color) &&
+                   !WouldBeInCheckAfterMove(color, new Position { Row = color == PieceColor.White ? 7 : 0, Col = 4 },
+                                                       new Position { Row = color == PieceColor.White ? 7 : 0, Col = 5 });
+        }
+
+        public bool CanCastleQueenside(PieceColor color)
+        {
+            if (color == PieceColor.White)
+            {
+                if (whiteKingMoved || whiteQueensideRookMoved) return false;
+                if (GetPiece(new Position { Row = 7, Col = 1 }) != null) return false;
+                if (GetPiece(new Position { Row = 7, Col = 2 }) != null) return false; 
+                if (GetPiece(new Position { Row = 7, Col = 3 }) != null) return false; 
+            }
+            else
+            {
+                if (blackKingMoved || blackQueensideRookMoved) return false;
+                if (GetPiece(new Position { Row = 0, Col = 1 }) != null) return false;
+                if (GetPiece(new Position { Row = 0, Col = 2 }) != null) return false;
+                if (GetPiece(new Position { Row = 0, Col = 3 }) != null) return false;
+            }
+
+            return !IsInCheck(color) &&
+                   !WouldBeInCheckAfterMove(color, new Position { Row = color == PieceColor.White ? 7 : 0, Col = 4 },
+                                                       new Position { Row = color == PieceColor.White ? 7 : 0, Col = 3 });
+        }
+
+
+        private bool WouldBeInCheckAfterMove(PieceColor color, Position from, Position to)
+        {
+            Board tempBoard = this.Clone();
+            tempBoard.RemovePiece(from);
+            tempBoard.PlacePiece(new King(to, color), to);   
+            return tempBoard.IsInCheck(color);
+        }
+
+        //End of Castling Logic
+
 
 
 
