@@ -1,23 +1,25 @@
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
+// Добавляем поддержку контроллеров
 builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+
+// Добавляем поддержку OpenAPI (документация API)
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// ==================== КОНФИГУРАЦИЯ ПАЙПЛАЙНА ====================
+
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.MapOpenApi();                    // ← Это важно!
+    // Можно также добавить удобный UI:
+    // app.UseSwaggerUI();               // если захотим классический Swagger UI
 }
 
 app.UseHttpsRedirection();
-
 app.UseAuthorization();
 
-app.MapControllers();
+app.MapControllers();                    // ← Подключаем все контроллеры
 
 app.Run();
