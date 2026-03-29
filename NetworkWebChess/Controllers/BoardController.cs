@@ -21,12 +21,5 @@ namespace NetworkWebChess.Controllers
             BoardStateDto dto = _boardService.GetInitialBoard();
             return Ok(dto);
         }
-
-        [HttpPost("move")]
-        public IActionResult MakeMove([FromBody] MoveRequestDto request)
-        {
-            BoardStateDto result = _boardService.MakeMove(request);
-            return Ok(result);
-        }
     }
 }

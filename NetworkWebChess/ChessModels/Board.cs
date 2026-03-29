@@ -412,6 +412,114 @@ namespace NetworkChess.ChessModels
 
 
 
+        //FEN NOTATION
+
+        public PieceColor CurrentPlayer { get; set; } = PieceColor.White;
+
+
+
+        public string ToFen()
+        {
+            string fen = BuildPiecePlacement();
+            fen += " " + GetActiveColor();
+            fen += " " + GetCastlingAvailability();
+            fen += " " + GetEnPassantTarget();      
+            fen += " " + "0";                        
+            fen += " " + "1";                         
+
+            return fen;
+        }
+
+        private string BuildPiecePlacement()
+        {
+            string fen = "";
+            int emptyCount = 0;
+
+            for (int r = 0; r < 8; r++)
+            {
+                for (int c = 0; c < 8; c++)
+                {
+                    Piece? piece = pieces[r, c];
+
+                    if (piece == null)
+                    {
+                        emptyCount++;
+                    }
+                    else
+                    {
+                        if (emptyCount > 0)
+                        {
+                            fen += emptyCount;
+                            emptyCount = 0;
+                        }
+
+                        fen += GetPieceFenSymbol(piece);
+                    }
+                }
+
+                if (emptyCount > 0)
+                {
+                    fen += emptyCount;
+                    emptyCount = 0;
+                }
+
+                if (r < 7)
+                    fen += "/";
+            }
+
+            return fen;
+        }
+
+        private char GetPieceFenSymbol(Piece piece)
+        {
+            char symbol = piece switch
+            {
+                Pawn => 'p',
+                Knight => 'n',
+                Bishop => 'b',
+                Rook => 'r',
+                Queen => 'q',
+                King => 'k',
+                _ => '?'
+            };
+
+            return (piece.Color == PieceColor.White) ? char.ToUpper(symbol) : symbol;
+        }
+
+        private string GetActiveColor()
+        {
+            return CurrentPlayer == PieceColor.White ? "w" : "b";
+        }
+
+        private string GetCastlingAvailability()
+        {
+            string castling = "";
+
+            if (!whiteKingMoved && !whiteKingsideRookMoved) castling += "K";
+            if (!whiteKingMoved && !whiteQueensideRookMoved) castling += "Q";
+            if (!blackKingMoved && !blackKingsideRookMoved) castling += "k";
+            if (!blackKingMoved && !blackQueensideRookMoved) castling += "q";
+
+            return string.IsNullOrEmpty(castling) ? "-" : castling;
+        }
+
+        private string GetEnPassantTarget()
+        {
+            // Пока не реализовано взятие на проходе
+            return "-";
+        }
+
+        //END OF FEN NOTATION
+
+
+
+
+
+
+
+
+
+
 
 
     }

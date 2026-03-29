@@ -11,7 +11,7 @@ builder.Services.AddSwaggerGen();
 
 
 builder.Services.AddScoped<BoardService>();
-
+builder.Services.AddScoped<GameService>();
 
 var app = builder.Build();
 
