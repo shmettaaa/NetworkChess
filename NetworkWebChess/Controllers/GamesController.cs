@@ -21,23 +21,23 @@ namespace NetworkWebChess.Controllers
             Guid gameId = _gameService.CreateNewGame();
 
             return CreatedAtAction(
-                nameof(GetCurrentGameState),     
-                new { gameId = gameId },
-                new { gameId = gameId, message = "Новая игра успешно создана" }
+                nameof(GetGameState),
+                new { gameId },
+                new { gameId, message = "Новая игра успешно создана" }
             );
         }
 
-        [HttpGet("current")]
-        public IActionResult GetCurrentGameState()
+        [HttpGet("{gameId}")]
+        public IActionResult GetGameState(Guid gameId)
         {
-            BoardStateDto state = _gameService.GetCurrentGameState();
+            BoardStateDto state = _gameService.GetGameState(gameId);
             return Ok(state);
         }
 
-        [HttpPost("move")]
-        public IActionResult MakeMove([FromBody] MoveRequestDto request)
+        [HttpPost("{gameId}/move")]
+        public IActionResult MakeMove(Guid gameId, [FromBody] MoveRequestDto request)
         {
-            BoardStateDto result = _gameService.MakeMove(request);
+            BoardStateDto result = _gameService.MakeMove(gameId, request);
             return Ok(result);
         }
     }

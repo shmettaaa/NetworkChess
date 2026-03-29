@@ -14,11 +14,11 @@ namespace NetworkWebChess.Services
             return _currentGame.Id;
         }
 
-        public BoardStateDto MakeMove(MoveRequestDto request)
+        public BoardStateDto MakeMove(Guid gameId, MoveRequestDto request)
         {
-            if (_currentGame == null)
+            if (_currentGame == null || _currentGame.Id != gameId)
             {
-                return new BoardStateDto("", "Игра ещё не создана. Создайте игру сначала.");
+                return new BoardStateDto("", "Игра с таким ID не найдена или не активна");
             }
 
             Piece? movingPiece = _currentGame.Board.GetPiece(request.From);
@@ -39,19 +39,14 @@ namespace NetworkWebChess.Services
             return _currentGame.GetBoardState();
         }
 
-        public BoardStateDto GetCurrentGameState()
+        public BoardStateDto GetGameState(Guid gameId)
         {
-            if (_currentGame == null)
+            if (_currentGame == null || _currentGame.Id != gameId)
             {
-                return new BoardStateDto("", "Игра ещё не создана");
+                return new BoardStateDto("", "Игра с таким ID не найдена или не активна");
             }
 
             return _currentGame.GetBoardState();
-        }
-
-        public bool HasActiveGame()
-        {
-            return _currentGame != null;
         }
     }
 }
