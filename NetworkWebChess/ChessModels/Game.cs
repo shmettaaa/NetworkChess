@@ -20,6 +20,7 @@ namespace NetworkChess.ChessModels
             Board = new Board();
             CurrentPlayer = PieceColor.White;
             IsGameOver = false;
+            Board.ResetCastlingRights();
         }
 
         public bool ExecuteMove(Move move)
@@ -55,7 +56,7 @@ namespace NetworkChess.ChessModels
             }
         }
 
-        public BoardStateDto GetBoardState()
+        public GameStateDto GetGameState()
         {
             string fen = Board.ToFen();
 
@@ -63,7 +64,19 @@ namespace NetworkChess.ChessModels
                 ? (GameResult ?? "Игра окончена")
                 : $"Ход: {(CurrentPlayer == PieceColor.White ? "Белые" : "Чёрные")}";
 
-            return new BoardStateDto(fen, message);
+            bool canCastleKingside = Board.CanCastleKingside(CurrentPlayer);
+            bool canCastleQueenside = Board.CanCastleQueenside(CurrentPlayer);
+
+            return new GameStateDto(
+                gameId: Id,
+                fen: fen,
+                message: message,
+                currentPlayer: CurrentPlayer,
+                isGameOver: IsGameOver,
+                gameResult: GameResult,
+                canKingside: canCastleKingside,
+                canQueenside: canCastleQueenside
+            );
         }
     }
 }

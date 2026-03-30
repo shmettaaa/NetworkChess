@@ -14,17 +14,27 @@ namespace NetworkWebChess.Services
             return _currentGame.Id;
         }
 
-        public BoardStateDto MakeMove(Guid gameId, MoveRequestDto request)
+        public GameStateDto GetGameState(Guid gameId)
         {
             if (_currentGame == null || _currentGame.Id != gameId)
             {
-                return new BoardStateDto("", "Игра с таким ID не найдена или не активна");
+                return new GameStateDto(Guid.Empty, "", "Игра с таким ID не найдена", PieceColor.White, false, null, false, false);
+            }
+
+            return _currentGame.GetGameState();
+        }
+
+        public GameStateDto MakeMove(Guid gameId, MoveRequestDto request)
+        {
+            if (_currentGame == null || _currentGame.Id != gameId)
+            {
+                return new GameStateDto(Guid.Empty, "", "Игра с таким ID не найдена", PieceColor.White, false, null, false, false);
             }
 
             Piece? movingPiece = _currentGame.Board.GetPiece(request.From);
             if (movingPiece == null)
             {
-                return new BoardStateDto("", "Фигура не найдена на позиции From");
+                return new GameStateDto(Guid.Empty, "", "Фигура не найдена на позиции From", PieceColor.White, false, null, false, false);
             }
 
             Move move = new Move(movingPiece, request.From, request.To);
@@ -33,20 +43,10 @@ namespace NetworkWebChess.Services
 
             if (!success)
             {
-                return new BoardStateDto("", "Невозможно выполнить ход");
+                return new GameStateDto(Guid.Empty, "", "Невозможно выполнить ход", PieceColor.White, false, null, false, false);
             }
 
-            return _currentGame.GetBoardState();
-        }
-
-        public BoardStateDto GetGameState(Guid gameId)
-        {
-            if (_currentGame == null || _currentGame.Id != gameId)
-            {
-                return new BoardStateDto("", "Игра с таким ID не найдена или не активна");
-            }
-
-            return _currentGame.GetBoardState();
+            return _currentGame.GetGameState();
         }
     }
 }

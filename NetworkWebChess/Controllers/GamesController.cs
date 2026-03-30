@@ -30,14 +30,14 @@ namespace NetworkWebChess.Controllers
         [HttpGet("{gameId}")]
         public IActionResult GetGameState(Guid gameId)
         {
-            BoardStateDto state = _gameService.GetGameState(gameId);
+            GameStateDto state = _gameService.GetGameState(gameId);
             return Ok(state);
         }
 
         [HttpPost("{gameId}/move")]
         public IActionResult MakeMove(Guid gameId, [FromBody] MoveRequestDto request)
         {
-            BoardStateDto result = _gameService.MakeMove(gameId, request);
+            GameStateDto result = _gameService.MakeMove(gameId, request);
             return Ok(result);
         }
     }
