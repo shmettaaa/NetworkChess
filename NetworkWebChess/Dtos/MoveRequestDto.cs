@@ -1,15 +1,13 @@
-﻿using NetworkWebChess.ChessModels.ChessPieces;
-
-namespace NetworkWebChess.Dtos
+﻿namespace NetworkWebChess.Dtos
 {
     public class MoveRequestDto
     {
-        public Position From { get; set; }
-        public Position To { get; set; }
+        public string From { get; set; } = string.Empty;
+        public string To { get; set; } = string.Empty;
 
         public MoveRequestDto() { }
 
-        public MoveRequestDto(Position from, Position to)
+        public MoveRequestDto(string from, string to)
         {
             From = from;
             To = to;

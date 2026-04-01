@@ -19,17 +19,11 @@ namespace NetworkWebChess.ChessModels.ChessPieces
             int direction = (Color == PieceColor.White) ? -1 : 1;
 
             Position forwardOne = new Position { Row = x + direction, Col = y };
-            if (forwardOne.Row >= 0 && forwardOne.Row <= 7 && forwardOne.Col >= 0 && forwardOne.Col <= 7)
+            if (forwardOne.Row >= 0 && forwardOne.Row <= 7)
             {
-                Piece? pieceOnTarget = board.GetPiece(forwardOne);
-
-                if (pieceOnTarget == null || pieceOnTarget.Color != Color)
+                if (board.GetPiece(forwardOne) == null)
                 {
-                    Move move = new Move(this, BoardPosition, forwardOne);
-                    if (pieceOnTarget != null)
-                        move.SetCapture(pieceOnTarget);
-
-                    moves.Add(move);
+                    moves.Add(new Move(this, BoardPosition, forwardOne));
                 }
             }
 
@@ -37,48 +31,47 @@ namespace NetworkWebChess.ChessModels.ChessPieces
             if (isStartingRow)
             {
                 Position forwardTwo = new Position { Row = x + 2 * direction, Col = y };
-                Position forwardOneCheck = new Position { Row = x + direction, Col = y };
+                Position between = new Position { Row = x + direction, Col = y };
 
-                if (forwardTwo.Row >= 0 && forwardTwo.Row <= 7 && forwardTwo.Col >= 0 && forwardTwo.Col <= 7)
+                if (board.GetPiece(between) == null && board.GetPiece(forwardTwo) == null)
                 {
-                    Piece? p1 = board.GetPiece(forwardOneCheck);
-                    Piece? p2 = board.GetPiece(forwardTwo);
+                    moves.Add(new Move(this, BoardPosition, forwardTwo));
+                }
+            }
 
-                    if (p1 == null && p2 == null)
+            int[] dy = { -1, 1 };
+
+            foreach (int d in dy)
+            {
+                Position diag = new Position { Row = x + direction, Col = y + d };
+
+                if (diag.Row >= 0 && diag.Row <= 7 && diag.Col >= 0 && diag.Col <= 7)
+                {
+                    Piece? target = board.GetPiece(diag);
+
+                    if (target != null && target.Color != Color)
                     {
-                        Move move = new Move(this, BoardPosition, forwardTwo);
+                        Move move = new Move(this, BoardPosition, diag);
+                        move.SetCapture(target);
                         moves.Add(move);
                     }
                 }
             }
 
-            Position captureLeft = new Position { Row = x + direction, Col = y - 1 };
-            if (captureLeft.Row >= 0 && captureLeft.Row <= 7 && captureLeft.Col >= 0 && captureLeft.Col <= 7)
+            if (board.EnPassantTarget.HasValue)
             {
-                Piece? pieceLeft = board.GetPiece(captureLeft);
-                if (pieceLeft != null && pieceLeft.Color != Color)
-                {
-                    Move move = new Move(this, BoardPosition, captureLeft);
-                    move.SetCapture(pieceLeft);
-                    moves.Add(move);
-                }
-            }
+                Position ep = board.EnPassantTarget.Value;
 
-            Position captureRight = new Position { Row = x + direction, Col = y + 1 };
-            if (captureRight.Row >= 0 && captureRight.Row <= 7 && captureRight.Col >= 0 && captureRight.Col <= 7)
-            {
-                Piece? pieceRight = board.GetPiece(captureRight);
-                if (pieceRight != null && pieceRight.Color != Color)
+                if (ep.Row == x + direction && Math.Abs(ep.Col - y) == 1)
                 {
-                    Move move = new Move(this, BoardPosition, captureRight);
-                    move.SetCapture(pieceRight);
+                    Move move = new Move(this, BoardPosition, ep);
+                    move.SetEnPassant();
                     moves.Add(move);
                 }
             }
 
             return moves;
         }
-
 
         public override Piece Clone()
         {

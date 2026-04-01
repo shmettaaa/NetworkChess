@@ -13,8 +13,10 @@ namespace NetworkChess.ChessModels
         public bool IsPromotion { get; private set; }
         public PieceType PromotionPieceType { get; private set; } = PieceType.Queen;
 
+
         public bool IsCastling { get; private set; }
         public bool IsEnPassant { get; private set; }
+
 
         public Move(Piece movingPiece, Position from, Position to)
         {

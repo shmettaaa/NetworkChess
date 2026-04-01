@@ -31,9 +31,17 @@ namespace NetworkChess.ChessModels
             if (move.MovingPiece.Color != CurrentPlayer)
                 return false;
 
+            List<Move> legalMoves = move.MovingPiece.GetLegalMoves(Board);
+
+            Move? realMove = legalMoves.FirstOrDefault(m =>
+                m.To.Row == move.To.Row && m.To.Col == move.To.Col);
+
+            if (realMove == null)
+                return false;
+
             try
             {
-                Board.MakeMove(move);
+                Board.MakeMove(realMove);
 
                 CurrentPlayer = CurrentPlayer == PieceColor.White ? PieceColor.Black : PieceColor.White;
 
@@ -67,6 +75,8 @@ namespace NetworkChess.ChessModels
             bool canCastleKingside = Board.CanCastleKingside(CurrentPlayer);
             bool canCastleQueenside = Board.CanCastleQueenside(CurrentPlayer);
 
+            bool isCheck = Board.IsInCheck(CurrentPlayer);
+
             return new GameStateDto(
                 gameId: Id,
                 fen: fen,
@@ -74,6 +84,7 @@ namespace NetworkChess.ChessModels
                 currentPlayer: CurrentPlayer,
                 isGameOver: IsGameOver,
                 gameResult: GameResult,
+                isCheck: isCheck, 
                 canKingside: canCastleKingside,
                 canQueenside: canCastleQueenside
             );

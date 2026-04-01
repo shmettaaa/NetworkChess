@@ -38,13 +38,16 @@ namespace NetworkWebChess.ChessModels.ChessPieces
             List<Move> potentialMoves = GetPotentialMoves(board);
             List<Move> legalMoves = new List<Move>();
 
-            for (int i = 0; i < potentialMoves.Count; i++)
+            foreach (var move in potentialMoves)
             {
-                Move move = potentialMoves[i];
-
                 Board tempBoard = board.Clone();
 
                 tempBoard.RemovePiece(move.From);
+
+                if (move.CapturedPiece != null)
+                {
+                    tempBoard.RemovePiece(move.To);
+                }
 
                 Piece movingPieceCopy = move.MovingPiece.Clone();
                 movingPieceCopy.BoardPosition = move.To;

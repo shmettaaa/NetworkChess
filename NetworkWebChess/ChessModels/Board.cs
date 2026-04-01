@@ -13,6 +13,10 @@ namespace NetworkChess.ChessModels
 
         private readonly Piece?[,] pieces;
 
+        private Board(bool skipInit)
+        {
+            pieces = new Piece[8, 8];
+        }
         public Board()
         {
             pieces = new Piece[8, 8];
@@ -114,21 +118,39 @@ namespace NetworkChess.ChessModels
 
         public Board Clone()
         {
-            Board clone = new Board();
+            Board clone = new Board(false);
 
             for (int r = 0; r < 8; r++)
             {
                 for (int c = 0; c < 8; c++)
                 {
                     Piece? originalPiece = pieces[r, c];
+
                     if (originalPiece != null)
                     {
                         Piece clonedPiece = originalPiece.Clone();
+
                         clone.pieces[r, c] = clonedPiece;
-                        clonedPiece.BoardPosition = new Position { Row = r, Col = c };
+
+                        clonedPiece.BoardPosition = new Position
+                        {
+                            Row = r,
+                            Col = c
+                        };
                     }
                 }
             }
+            clone.CurrentPlayer = this.CurrentPlayer;
+
+            clone.whiteKingMoved = this.whiteKingMoved;
+            clone.blackKingMoved = this.blackKingMoved;
+            clone.whiteKingsideRookMoved = this.whiteKingsideRookMoved;
+            clone.whiteQueensideRookMoved = this.whiteQueensideRookMoved;
+            clone.blackKingsideRookMoved = this.blackKingsideRookMoved;
+            clone.blackQueensideRookMoved = this.blackQueensideRookMoved;
+
+            clone.EnPassantTarget = this.EnPassantTarget;
+            clone.EnPassantPawnPosition = this.EnPassantPawnPosition;
 
             return clone;
         }
@@ -227,18 +249,36 @@ namespace NetworkChess.ChessModels
 
 
 
-        /// <summary>
-        /// Главный метод выполнения хода. Обрабатывает обычные ходы, взятия, превращение пешки и рокировку.
-        /// </summary>
         public void MakeMove(Move move)
         {
             if (move == null)
                 throw new ArgumentNullException(nameof(move));
 
-            Piece? pieceAtFrom = GetPiece(move.From);
-            if (pieceAtFrom == null || pieceAtFrom != move.MovingPiece)
+            Piece? piece = GetPiece(move.From);
+
+            if (piece == null)
+                throw new InvalidOperationException("Фигура не найдена.");
+
+            if (piece is King)
             {
-                throw new InvalidOperationException("Невозможно выполнить ход: фигура не находится на позиции From.");
+                int row = piece.Color == PieceColor.White ? 7 : 0;
+
+                if (move.From.Row == row && move.From.Col == 4 &&
+                    move.To.Row == row && move.To.Col == 6)
+                {
+                    move.SetCastling();
+                }
+
+                if (move.From.Row == row && move.From.Col == 4 &&
+                    move.To.Row == row && move.To.Col == 2)
+                {
+                    move.SetCastling();
+                }
+            }
+
+            if (move.IsEnPassant && EnPassantPawnPosition.HasValue)
+            {
+                RemovePiece(EnPassantPawnPosition.Value);
             }
 
             Piece? capturedPiece = GetPiece(move.To);
@@ -251,22 +291,46 @@ namespace NetworkChess.ChessModels
             {
                 ExecuteCastling(move);
                 UpdateCastlingRights(move);
+
+                EnPassantTarget = null;
+                EnPassantPawnPosition = null;
                 return;
             }
 
             RemovePiece(move.From);
 
-            if (move.MovingPiece is Pawn &&
-                ((move.MovingPiece.Color == PieceColor.White && move.To.Row == 0) ||
-                 (move.MovingPiece.Color == PieceColor.Black && move.To.Row == 7)))
+            if (piece is Pawn &&
+                ((piece.Color == PieceColor.White && move.To.Row == 0) ||
+                 (piece.Color == PieceColor.Black && move.To.Row == 7)))
             {
                 move.SetPromotion();
-                Piece newPiece = CreatePromotionPiece(move.MovingPiece.Color, move.PromotionPieceType, move.To);
+                Piece newPiece = CreatePromotionPiece(piece.Color, move.PromotionPieceType, move.To);
                 PlacePiece(newPiece, move.To);
             }
             else
             {
-                PlacePiece(move.MovingPiece, move.To);
+                PlacePiece(piece, move.To);
+            }
+
+            EnPassantTarget = null;
+            EnPassantPawnPosition = null;
+
+            if (piece is Pawn)
+            {
+                int diff = Math.Abs(move.From.Row - move.To.Row);
+
+                if (diff == 2)
+                {
+                    int direction = piece.Color == PieceColor.White ? -1 : 1;
+
+                    EnPassantTarget = new Position
+                    {
+                        Row = move.From.Row + direction,
+                        Col = move.From.Col
+                    };
+
+                    EnPassantPawnPosition = move.To;
+                }
             }
 
             UpdateCastlingRights(move);
@@ -339,24 +403,31 @@ namespace NetworkChess.ChessModels
 
         public bool CanCastleKingside(PieceColor color)
         {
+            int row = color == PieceColor.White ? 7 : 0;
+
             if (color == PieceColor.White)
             {
                 if (whiteKingMoved || whiteKingsideRookMoved) return false;
-
-                if (GetPiece(new Position { Row = 7, Col = 5 }) != null) return false; 
-                if (GetPiece(new Position { Row = 7, Col = 6 }) != null) return false; 
             }
-            else 
+            else
             {
                 if (blackKingMoved || blackKingsideRookMoved) return false;
-
-                if (GetPiece(new Position { Row = 0, Col = 5 }) != null) return false;
-                if (GetPiece(new Position { Row = 0, Col = 6 }) != null) return false;
             }
 
-            return !IsInCheck(color) &&
-                   !WouldBeInCheckAfterMove(color, new Position { Row = color == PieceColor.White ? 7 : 0, Col = 4 },
-                                                       new Position { Row = color == PieceColor.White ? 7 : 0, Col = 5 });
+            if (GetPiece(new Position { Row = row, Col = 5 }) != null) return false;
+            if (GetPiece(new Position { Row = row, Col = 6 }) != null) return false;
+
+            if (IsInCheck(color)) return false;
+
+            if (WouldBeInCheckAfterMove(color,
+                new Position { Row = row, Col = 4 },
+                new Position { Row = row, Col = 5 })) return false;
+
+            if (WouldBeInCheckAfterMove(color,
+                new Position { Row = row, Col = 4 },
+                new Position { Row = row, Col = 6 })) return false;
+
+            return true;
         }
 
         public bool CanCastleQueenside(PieceColor color)
@@ -385,8 +456,11 @@ namespace NetworkChess.ChessModels
         private bool WouldBeInCheckAfterMove(PieceColor color, Position from, Position to)
         {
             Board tempBoard = this.Clone();
+
+            Piece? king = tempBoard.GetPiece(from);
             tempBoard.RemovePiece(from);
-            tempBoard.PlacePiece(new King(to, color), to);   
+            tempBoard.PlacePiece(king!, to);
+
             return tempBoard.IsInCheck(color);
         }
 
@@ -527,14 +601,20 @@ namespace NetworkChess.ChessModels
 
         private string GetEnPassantTarget()
         {
-            // Пока не реализовано взятие на проходе
-            return "-";
+            if (!EnPassantTarget.HasValue)
+                return "-";
+
+            char file = (char)('a' + EnPassantTarget.Value.Col);
+            int rank = 8 - EnPassantTarget.Value.Row;
+
+            return $"{file}{rank}";
         }
 
         //END OF FEN NOTATION
 
 
-
+        public Position? EnPassantTarget { get; private set; }
+        public Position? EnPassantPawnPosition { get; private set; }
 
 
 
