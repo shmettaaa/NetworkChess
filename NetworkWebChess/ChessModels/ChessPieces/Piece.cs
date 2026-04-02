@@ -44,7 +44,11 @@ namespace NetworkWebChess.ChessModels.ChessPieces
 
                 tempBoard.RemovePiece(move.From);
 
-                if (move.CapturedPiece != null)
+                if (move.IsEnPassant && tempBoard.EnPassantPawnPosition.HasValue)
+                {
+                    tempBoard.RemovePiece(tempBoard.EnPassantPawnPosition.Value);
+                }
+                else if (move.CapturedPiece != null)
                 {
                     tempBoard.RemovePiece(move.To);
                 }

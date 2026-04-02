@@ -34,11 +34,34 @@ namespace NetworkWebChess.Controllers
             return Ok(state);
         }
 
+
         [HttpPost("{gameId}/move")]
-        public IActionResult MakeMove(Guid gameId, [FromBody] MoveRequestDto request)
+        public async Task<IActionResult> MakeMove(
+     Guid gameId,
+     [FromBody] MoveRequestDto request,
+     [FromQuery] string playerId)   
         {
-            GameStateDto result = _gameService.MakeMove(gameId, request);
+            if (string.IsNullOrEmpty(playerId))
+            {
+                return BadRequest("playerId обязателен");
+            }
+
+            GameStateDto result = await _gameService.MakeMove(gameId, request, playerId);
             return Ok(result);
         }
+
+        [HttpPost("{gameId}/join")]
+        public IActionResult JoinGame(Guid gameId, [FromBody] JoinGameRequestDto request)
+        {
+            var (role, state) = _gameService.JoinGame(gameId, request.PlayerId);
+
+            return Ok(new
+            {
+                role,
+                state
+            });
+        }
+
+
     }
 }

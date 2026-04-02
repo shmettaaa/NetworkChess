@@ -6,7 +6,7 @@ builder.Services.AddControllers();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-
+builder.Services.AddSignalR();
 builder.Services.AddScoped<BoardService>();
 builder.Services.AddSingleton<GameService>();
 
@@ -36,5 +36,6 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<NetworkWebChess.Hubs.GameHub>("/gamehub");
 
 app.Run();

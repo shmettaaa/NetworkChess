@@ -12,8 +12,37 @@ namespace NetworkChess.ChessModels
         public string WhitePlayerName { get; set; } = "White";
         public string BlackPlayerName { get; set; } = "Black";
         public bool IsGameOver { get; private set; }
-        public string? GameResult { get; private set; }   
+        public string? GameResult { get; private set; }
 
+        public string? WhitePlayerId { get; private set; }
+        public string? BlackPlayerId { get; private set; }
+
+        public string JoinGame(string playerId)
+        {
+            if (WhitePlayerId == null)
+            {
+                WhitePlayerId = playerId;
+                return "White";
+            }
+
+            if (BlackPlayerId == null)
+            {
+                BlackPlayerId = playerId;
+                return "Black";
+            }
+
+            return "Spectator"; 
+        }
+
+
+
+        public bool IsPlayersTurn(string playerId)
+        {
+            if (CurrentPlayer == PieceColor.White)
+                return WhitePlayerId == playerId;
+
+            return BlackPlayerId == playerId;
+        }
         public Game()
         {
             Id = Guid.NewGuid();
