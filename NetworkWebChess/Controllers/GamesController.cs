@@ -8,60 +8,41 @@ namespace NetworkWebChess.Controllers
     [Route("api/games")]
     public class GamesController : ControllerBase
     {
-        private readonly GameService _gameService;
+        private readonly GameService _service;
 
-        public GamesController(GameService gameService)
+        public GamesController(GameService service)
         {
-            _gameService = gameService;
+            _service = service;
         }
 
         [HttpPost]
         public IActionResult CreateGame()
         {
-            Guid gameId = _gameService.CreateNewGame();
-
-            return CreatedAtAction(
-                nameof(GetGameState),
-                new { gameId },
-                new { gameId, message = "Новая игра успешно создана" }
-            );
+            var id = _service.CreateNewGame();
+            return Ok(new { gameId = id });
         }
 
         [HttpGet("{gameId}")]
-        public IActionResult GetGameState(Guid gameId)
+        public IActionResult GetGame(Guid gameId)
         {
-            GameStateDto state = _gameService.GetGameState(gameId);
-            return Ok(state);
-        }
-
-
-        [HttpPost("{gameId}/move")]
-        public async Task<IActionResult> MakeMove(
-     Guid gameId,
-     [FromBody] MoveRequestDto request,
-     [FromQuery] string playerId)   
-        {
-            if (string.IsNullOrEmpty(playerId))
-            {
-                return BadRequest("playerId обязателен");
-            }
-
-            GameStateDto result = await _gameService.MakeMove(gameId, request, playerId);
-            return Ok(result);
+            return Ok(_service.GetGameState(gameId));
         }
 
         [HttpPost("{gameId}/join")]
-        public IActionResult JoinGame(Guid gameId, [FromBody] JoinGameRequestDto request)
+        public IActionResult Join(Guid gameId, [FromBody] JoinGameRequestDto request)
         {
-            var (role, state) = _gameService.JoinGame(gameId, request.PlayerId);
-
-            return Ok(new
-            {
-                role,
-                state
-            });
+            var result = _service.JoinGame(gameId, request.PlayerId);
+            return Ok(result);
         }
 
-
+        [HttpPost("{gameId}/move")]
+        public async Task<IActionResult> Move(
+            Guid gameId,
+            [FromBody] MoveRequestDto request,
+            [FromQuery] string playerId)
+        {
+            var result = await _service.MakeMove(gameId, request, playerId);
+            return Ok(result);
+        }
     }
 }
