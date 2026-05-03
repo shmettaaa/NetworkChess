@@ -1,20 +1,12 @@
-﻿using Microsoft.AspNetCore.SignalR;
-using NetworkChess.ChessModels;
+﻿using NetworkChess.ChessModels;
 using NetworkWebChess.ChessModels.ChessPieces;
 using NetworkWebChess.Dtos;
-using NetworkWebChess.Hubs;
 
 namespace NetworkWebChess.Services
 {
     public class GameService
     {
         private readonly Dictionary<Guid, Game> _games = new();
-        private readonly IHubContext<GameHub> _hub;
-
-        public GameService(IHubContext<GameHub> hub)
-        {
-            _hub = hub;
-        }
 
         public Guid CreateNewGame()
         {
@@ -31,16 +23,15 @@ namespace NetworkWebChess.Services
             return game.GetGameState();
         }
 
-        public (string role, GameStateDto state) JoinGame(Guid id, string playerId)
+        public (string role, GameStateDto state) JoinGame(Guid id, string playerId, string? preferredColor)
         {
             var game = _games[id];
-
-            var role = game.JoinGame(playerId);
+            var role = game.JoinGame(playerId, preferredColor);
 
             return (role, game.GetGameState());
         }
 
-        public async Task<GameStateDto> MakeMove(Guid id, MoveRequestDto request, string playerId)
+        public GameStateDto MakeMove(Guid id, MoveRequestDto request, string playerId)
         {
             var game = _games[id];
 
@@ -59,12 +50,19 @@ namespace NetworkWebChess.Services
             if (!game.ExecuteMove(move))
                 return game.GetGameState();
 
-            var state = game.GetGameState();
+            return game.GetGameState();
+        }
 
-            await _hub.Clients.Group(id.ToString())
-                .SendAsync("ReceiveMove", state);
+        public bool TryRemoveGame(Guid id)
+        {
+            if (!_games.TryGetValue(id, out var game))
+                return false;
 
-            return state;
+            if (!game.IsGameOver)
+                return false;
+
+            _games.Remove(id);
+            return true;
         }
 
         private Position Parse(string square)

@@ -28,21 +28,15 @@ namespace NetworkWebChess.Controllers
             return Ok(_service.GetGameState(gameId));
         }
 
-        [HttpPost("{gameId}/join")]
-        public IActionResult Join(Guid gameId, [FromBody] JoinGameRequestDto request)
+        [HttpDelete("{gameId}")]
+        public IActionResult DeleteGame(Guid gameId)
         {
-            var result = _service.JoinGame(gameId, request.PlayerId);
-            return Ok(result);
-        }
+            var removed = _service.TryRemoveGame(gameId);
 
-        [HttpPost("{gameId}/move")]
-        public async Task<IActionResult> Move(
-            Guid gameId,
-            [FromBody] MoveRequestDto request,
-            [FromQuery] string playerId)
-        {
-            var result = await _service.MakeMove(gameId, request, playerId);
-            return Ok(result);
+            if (!removed)
+                return BadRequest("Game is not finished or not found");
+
+            return Ok();
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.SignalR;
+using NetworkWebChess.Dtos;
 using NetworkWebChess.Services;
 
 namespace NetworkWebChess.Hubs
@@ -12,11 +13,11 @@ namespace NetworkWebChess.Hubs
             _service = service;
         }
 
-        public async Task JoinGame(string gameId, string playerId)
+        public async Task JoinGame(string gameId, string playerId, string? preferredColor)
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, gameId);
 
-            var (role, state) = _service.JoinGame(Guid.Parse(gameId), playerId);
+            var (role, state) = _service.JoinGame(Guid.Parse(gameId), playerId, preferredColor);
 
             await Clients.Caller.SendAsync("Init", new
             {
@@ -27,26 +28,16 @@ namespace NetworkWebChess.Hubs
 
         public async Task MakeMove(string gameId, string playerId, string from, string to)
         {
-            await _service.MakeMove(
-                Guid.Parse(gameId),
-                new NetworkWebChess.Dtos.MoveRequestDto(from, to),
+            if (!Guid.TryParse(gameId, out var parsedId))
+                return;
+
+            var state = _service.MakeMove(
+                parsedId,
+                new MoveRequestDto(from, to),
                 playerId
             );
+
+            await Clients.Group(gameId).SendAsync("ReceiveMove", state);
         }
-
-
-        public async Task SendChatMessage(string gameId, string playerId, string text)
-        {
-            await Clients.Group(gameId).SendAsync("ChatMessage", new
-            {
-                playerId,
-                text,
-                timestamp = DateTime.UtcNow
-            });
-        }
-
-
-
-
     }
 }

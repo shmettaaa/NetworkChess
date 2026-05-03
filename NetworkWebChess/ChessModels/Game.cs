@@ -9,14 +9,15 @@ namespace NetworkChess.ChessModels
         public Board Board { get; private set; }
         public PieceColor CurrentPlayer { get; private set; }
 
-        public string WhitePlayerName { get; set; } = "White";
-        public string BlackPlayerName { get; set; } = "Black";
+        public GameStatus Status { get; private set; } = GameStatus.WaitingForPlayers;
 
-        public bool IsGameOver { get; private set; }
+        public bool IsGameOver => Status == GameStatus.Finished;
         public string? GameResult { get; private set; }
 
         public string? WhitePlayerId { get; private set; }
         public string? BlackPlayerId { get; private set; }
+
+        public bool IsStarted => WhitePlayerId != null && BlackPlayerId != null;
 
         public Game()
         {
@@ -26,27 +27,36 @@ namespace NetworkChess.ChessModels
             Board.ResetCastlingRights();
         }
 
-        public string JoinGame(string playerId)
+        public string JoinGame(string playerId, string? preferredColor = null)
         {
-            if (WhitePlayerId == playerId)
-                return "white";
+            if (WhitePlayerId == playerId) return "white";
+            if (BlackPlayerId == playerId) return "black";
 
-            if (BlackPlayerId == playerId)
-                return "black";
-
-            if (WhitePlayerId == null)
+            if (preferredColor == "white" && WhitePlayerId == null)
             {
                 WhitePlayerId = playerId;
-                return "white";
             }
-
-            if (BlackPlayerId == null)
+            else if (preferredColor == "black" && BlackPlayerId == null)
             {
                 BlackPlayerId = playerId;
-                return "black";
+            }
+            else if (WhitePlayerId == null)
+            {
+                WhitePlayerId = playerId;
+            }
+            else if (BlackPlayerId == null)
+            {
+                BlackPlayerId = playerId;
+            }
+            else
+            {
+                return "spectator";
             }
 
-            return "spectator";
+            if (IsStarted)
+                Status = GameStatus.InProgress;
+
+            return WhitePlayerId == playerId ? "white" : "black";
         }
 
         public bool IsPlayersTurn(string playerId)
@@ -58,7 +68,8 @@ namespace NetworkChess.ChessModels
 
         public bool ExecuteMove(Move move)
         {
-            if (IsGameOver) return false;
+            if (!IsStarted) return false;
+            if (Status != GameStatus.InProgress) return false;
             if (move.MovingPiece.Color != CurrentPlayer) return false;
 
             var legalMoves = move.MovingPiece.GetLegalMoves(Board);
@@ -76,14 +87,14 @@ namespace NetworkChess.ChessModels
 
             if (Board.IsCheckmate(CurrentPlayer))
             {
-                IsGameOver = true;
+                Status = GameStatus.Finished;
                 GameResult = CurrentPlayer == PieceColor.White
                     ? "Black wins"
                     : "White wins";
             }
             else if (Board.IsStalemate(CurrentPlayer))
             {
-                IsGameOver = true;
+                Status = GameStatus.Finished;
                 GameResult = "Draw";
             }
 
@@ -95,11 +106,11 @@ namespace NetworkChess.ChessModels
             return new GameStateDto(
                 Id,
                 Board.ToFen(),
-                IsGameOver
+                Status == GameStatus.Finished
                     ? (GameResult ?? "Game over")
                     : $"Ход: {(CurrentPlayer == PieceColor.White ? "Белые" : "Чёрные")}",
                 CurrentPlayer,
-                IsGameOver,
+                Status == GameStatus.Finished,
                 GameResult,
                 Board.IsInCheck(CurrentPlayer),
                 Board.CanCastleKingside(CurrentPlayer),
