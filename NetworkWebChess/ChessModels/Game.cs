@@ -17,6 +17,8 @@ namespace NetworkChess.ChessModels
         public string? WhitePlayerId { get; private set; }
         public string? BlackPlayerId { get; private set; }
 
+        public DateTime LastActivityUtc { get; private set; }
+
         public bool IsStarted => WhitePlayerId != null && BlackPlayerId != null;
 
         public Game()
@@ -25,33 +27,32 @@ namespace NetworkChess.ChessModels
             Board = new Board();
             CurrentPlayer = PieceColor.White;
             Board.ResetCastlingRights();
+
+            Touch();
+        }
+
+        private void Touch()
+        {
+            LastActivityUtc = DateTime.UtcNow;
         }
 
         public string JoinGame(string playerId, string? preferredColor = null)
         {
+            Touch();
+
             if (WhitePlayerId == playerId) return "white";
             if (BlackPlayerId == playerId) return "black";
 
             if (preferredColor == "white" && WhitePlayerId == null)
-            {
                 WhitePlayerId = playerId;
-            }
             else if (preferredColor == "black" && BlackPlayerId == null)
-            {
                 BlackPlayerId = playerId;
-            }
             else if (WhitePlayerId == null)
-            {
                 WhitePlayerId = playerId;
-            }
             else if (BlackPlayerId == null)
-            {
                 BlackPlayerId = playerId;
-            }
             else
-            {
                 return "spectator";
-            }
 
             if (IsStarted)
                 Status = GameStatus.InProgress;
@@ -81,6 +82,8 @@ namespace NetworkChess.ChessModels
 
             Board.MakeMove(realMove);
 
+            Touch();
+
             CurrentPlayer = CurrentPlayer == PieceColor.White
                 ? PieceColor.Black
                 : PieceColor.White;
@@ -99,6 +102,11 @@ namespace NetworkChess.ChessModels
             }
 
             return true;
+        }
+
+        public bool IsExpired(TimeSpan ttl)
+        {
+            return DateTime.UtcNow - LastActivityUtc > ttl;
         }
 
         public GameStateDto GetGameState()

@@ -5,7 +5,13 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddSignalR();
+
+builder.Services.AddSingleton<GameStore>();
 builder.Services.AddSingleton<GameService>();
+
+builder.Services.AddSingleton<GameLifecycleService>();
+
+builder.Services.AddHostedService<GameCleanupService>();
 
 builder.Services.AddCors(options =>
 {

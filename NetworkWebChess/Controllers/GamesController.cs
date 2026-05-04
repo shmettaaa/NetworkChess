@@ -1,42 +1,45 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using NetworkWebChess.Dtos;
 using NetworkWebChess.Services;
 
-namespace NetworkWebChess.Controllers
+namespace NetworkWebChess.Controllers;
+
+[ApiController]
+[Route("api/games")]
+public class GamesController : ControllerBase
 {
-    [ApiController]
-    [Route("api/games")]
-    public class GamesController : ControllerBase
+    private readonly GameService _service;
+    private readonly GameLifecycleService _lifecycle;
+
+    public GamesController(
+        GameService service,
+        GameLifecycleService lifecycle)
     {
-        private readonly GameService _service;
+        _service = service;
+        _lifecycle = lifecycle;
+    }
 
-        public GamesController(GameService service)
-        {
-            _service = service;
-        }
+    [HttpPost]
+    public IActionResult CreateGame()
+    {
+        var id = _service.CreateNewGame();
+        return Ok(new { gameId = id });
+    }
 
-        [HttpPost]
-        public IActionResult CreateGame()
-        {
-            var id = _service.CreateNewGame();
-            return Ok(new { gameId = id });
-        }
+    [HttpGet("{gameId}")]
+    public IActionResult GetGame(Guid gameId)
+    {
+        var state = _service.GetGameState(gameId);
 
-        [HttpGet("{gameId}")]
-        public IActionResult GetGame(Guid gameId)
-        {
-            return Ok(_service.GetGameState(gameId));
-        }
+        if (state == null)
+            return NotFound();
 
-        [HttpDelete("{gameId}")]
-        public IActionResult DeleteGame(Guid gameId)
-        {
-            var removed = _service.TryRemoveGame(gameId);
+        return Ok(state);
+    }
 
-            if (!removed)
-                return BadRequest("Game is not finished or not found");
-
-            return Ok();
-        }
+    [HttpDelete("{gameId}")]
+    public async Task<IActionResult> DeleteGame(Guid gameId)
+    {
+        await _lifecycle.DeleteGame(gameId, "rest");
+        return Ok();
     }
 }
