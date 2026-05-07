@@ -21,6 +21,19 @@ builder.Services.AddSingleton<GameStore>();
 builder.Services.AddScoped<GameService>();
 builder.Services.AddScoped<GameLifecycleService>();
 
+
+
+
+builder.Services.AddScoped<IUserRepository, EfUserRepository>();
+
+builder.Services.AddScoped<PasswordService>();
+
+builder.Services.AddScoped<AuthService>();
+
+
+
+
+
 builder.Services.AddHostedService<GameCleanupService>();
 
 builder.Services.AddCors(options =>

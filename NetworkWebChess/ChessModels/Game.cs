@@ -16,8 +16,11 @@ namespace NetworkChess.ChessModels
         public bool IsGameOver => Status == GameStatus.Finished;
         public string? GameResult { get; private set; }
 
-        public string? WhitePlayerId { get; private set; }
-        public string? BlackPlayerId { get; private set; }
+        public Guid? WhitePlayerId { get; private set; }
+        public Guid? BlackPlayerId { get; private set; }
+
+        public string? WhitePlayerNickname { get; private set; }
+        public string? BlackPlayerNickname { get; private set; }
 
         public DateTime LastActivityUtc { get; private set; }
 
@@ -37,35 +40,57 @@ namespace NetworkChess.ChessModels
             LastActivityUtc = DateTime.UtcNow;
         }
 
-        public string JoinGame(string playerId, string? preferredColor = null)
+        public string JoinGame(
+     Guid userId,
+     string nickname,
+     string? preferredColor = null)
         {
             Touch();
 
-            if (WhitePlayerId == playerId) return "white";
-            if (BlackPlayerId == playerId) return "black";
+            if (WhitePlayerId == userId)
+                return "white";
+
+            if (BlackPlayerId == userId)
+                return "black";
 
             if (preferredColor == "white" && WhitePlayerId == null)
-                WhitePlayerId = playerId;
+            {
+                WhitePlayerId = userId;
+                WhitePlayerNickname = nickname;
+            }
             else if (preferredColor == "black" && BlackPlayerId == null)
-                BlackPlayerId = playerId;
+            {
+                BlackPlayerId = userId;
+                BlackPlayerNickname = nickname;
+            }
             else if (WhitePlayerId == null)
-                WhitePlayerId = playerId;
+            {
+                WhitePlayerId = userId;
+                WhitePlayerNickname = nickname;
+            }
             else if (BlackPlayerId == null)
-                BlackPlayerId = playerId;
+            {
+                BlackPlayerId = userId;
+                BlackPlayerNickname = nickname;
+            }
             else
+            {
                 return "spectator";
+            }
 
             if (IsStarted)
                 Status = GameStatus.InProgress;
 
-            return WhitePlayerId == playerId ? "white" : "black";
+            return WhitePlayerId == userId
+                ? "white"
+                : "black";
         }
 
-        public bool IsPlayersTurn(string playerId)
+        public bool IsPlayersTurn(Guid userId)
         {
             return CurrentPlayer == PieceColor.White
-                ? WhitePlayerId == playerId
-                : BlackPlayerId == playerId;
+                ? WhitePlayerId == userId
+                : BlackPlayerId == userId;
         }
 
         public bool ExecuteMove(Move move)
@@ -128,6 +153,8 @@ namespace NetworkChess.ChessModels
                 Id = this.Id,
                 WhitePlayerId = this.WhitePlayerId,
                 BlackPlayerId = this.BlackPlayerId,
+                WhitePlayerNickname = this.WhitePlayerNickname,
+                BlackPlayerNickname = this.BlackPlayerNickname,
                 Status = this.Status.ToString(),
                 GameResult = this.GameResult,
                 CurrentFen = this.Board.ToFen(),
@@ -151,7 +178,8 @@ namespace NetworkChess.ChessModels
 
             WhitePlayerId = entity.WhitePlayerId;
             BlackPlayerId = entity.BlackPlayerId;
-
+            WhitePlayerNickname = entity.WhitePlayerNickname;
+            BlackPlayerNickname = entity.BlackPlayerNickname;
             Status = Enum.TryParse<GameStatus>(entity.Status, out var status)
                 ? status
                 : GameStatus.WaitingForPlayers;

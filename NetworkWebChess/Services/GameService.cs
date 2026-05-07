@@ -10,11 +10,16 @@ public class GameService
 {
     private readonly GameStore _store;
     private readonly IGameRepository _repository;
+    private readonly AuthService _auth;
 
-    public GameService(GameStore store, IGameRepository repository)
+    public GameService(
+        GameStore store,
+        IGameRepository repository,
+        AuthService auth)
     {
         _store = store;
         _repository = repository;
+        _auth = auth;
     }
 
     public async Task<Guid> CreateNewGameAsync()
@@ -31,10 +36,12 @@ public class GameService
     public async Task<Game?> GetOrLoadGameAsync(Guid id)
     {
         var game = _store.Get(id);
+
         if (game != null)
             return game;
 
         var entity = await _repository.GetAsync(id);
+
         if (entity == null)
             return null;
 
@@ -49,19 +56,29 @@ public class GameService
     public async Task<GameStateDto?> GetGameStateAsync(Guid id)
     {
         var game = await GetOrLoadGameAsync(id);
+
         return game?.GetGameState();
     }
 
     public async Task<(string role, GameStateDto? state)> JoinGameAsync(
-        Guid id,
-        string playerId,
+        Guid gameId,
+        Guid userId,
         string? preferredColor)
     {
-        var game = await GetOrLoadGameAsync(id);
+        var game = await GetOrLoadGameAsync(gameId);
+
         if (game == null)
             return ("not_found", null);
 
-        var role = game.JoinGame(playerId, preferredColor);
+        var user = await _auth.GetUserByIdAsync(userId);
+
+        if (user == null)
+            return ("unauthorized", null);
+
+        var role = game.JoinGame(
+            user.Id,
+            user.Nickname,
+            preferredColor);
 
         await Save(game);
 
@@ -69,21 +86,23 @@ public class GameService
     }
 
     public async Task<GameStateDto?> MakeMoveAsync(
-        Guid id,
+        Guid gameId,
         MoveRequestDto request,
-        string playerId)
+        Guid userId)
     {
-        var game = await GetOrLoadGameAsync(id);
+        var game = await GetOrLoadGameAsync(gameId);
+
         if (game == null)
             return null;
 
-        if (!game.IsPlayersTurn(playerId))
+        if (!game.IsPlayersTurn(userId))
             return game.GetGameState();
 
         var from = Parse(request.From);
         var to = Parse(request.To);
 
         var piece = game.Board.GetPiece(from);
+
         if (piece == null)
             return game.GetGameState();
 
@@ -113,16 +132,24 @@ public class GameService
 
         entity.WhitePlayerId = updated.WhitePlayerId;
         entity.BlackPlayerId = updated.BlackPlayerId;
+
+        entity.WhitePlayerNickname = updated.WhitePlayerNickname;
+        entity.BlackPlayerNickname = updated.BlackPlayerNickname;
+
         entity.Status = updated.Status;
         entity.GameResult = updated.GameResult;
+
         entity.CurrentFen = updated.CurrentFen;
         entity.CurrentPlayer = updated.CurrentPlayer;
+
         entity.LastActivityUtc = updated.LastActivityUtc;
 
         entity.WhiteKingMoved = updated.WhiteKingMoved;
         entity.BlackKingMoved = updated.BlackKingMoved;
+
         entity.WhiteKingsideRookMoved = updated.WhiteKingsideRookMoved;
         entity.WhiteQueensideRookMoved = updated.WhiteQueensideRookMoved;
+
         entity.BlackKingsideRookMoved = updated.BlackKingsideRookMoved;
         entity.BlackQueensideRookMoved = updated.BlackQueensideRookMoved;
 
@@ -134,6 +161,7 @@ public class GameService
     public async Task<List<Guid>> GetExpiredGamesAsync(TimeSpan ttl)
     {
         var expired = await _repository.GetExpiredGamesAsync(ttl);
+
         return expired.Select(x => x.Id).ToList();
     }
 

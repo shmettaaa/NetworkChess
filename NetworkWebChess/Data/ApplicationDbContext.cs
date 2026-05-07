@@ -7,6 +7,7 @@ namespace NetworkWebChess.Data;
 public class ApplicationDbContext : DbContext
 {
     public DbSet<GameEntity> Games { get; set; } = null!;
+    public DbSet<UserEntity> Users { get; set; } = null!;
 
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
         : base(options)
@@ -15,6 +16,26 @@ public class ApplicationDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<UserEntity>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+
+            entity.HasIndex(x => x.Nickname)
+                .IsUnique();
+
+            entity.HasIndex(x => x.SessionToken)
+                .IsUnique();
+
+            entity.Property(x => x.Nickname)
+                .IsRequired();
+
+            entity.Property(x => x.PasswordHash)
+                .IsRequired();
+
+            entity.Property(x => x.SessionToken)
+                .IsRequired();
+        });
+
         modelBuilder.Entity<GameEntity>(entity =>
         {
             entity.HasKey(g => g.Id);

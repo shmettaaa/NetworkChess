@@ -9,44 +9,80 @@ public class GameHub : Hub
     private readonly GameService _service;
     private readonly GameLifecycleService _lifecycle;
 
-    public GameHub(GameService service, GameLifecycleService lifecycle)
+    public GameHub(
+        GameService service,
+        GameLifecycleService lifecycle)
     {
         _service = service;
         _lifecycle = lifecycle;
     }
 
-    public async Task JoinGame(string gameIdStr, string playerId, string? preferredColor)
+    public async Task JoinGame(
+        string gameIdStr,
+        string userIdStr,
+        string? preferredColor)
     {
-        if (!Guid.TryParse(gameIdStr, out var id))
+        if (!Guid.TryParse(gameIdStr, out var gameId))
             return;
 
-        await Groups.AddToGroupAsync(Context.ConnectionId, gameIdStr);
+        if (!Guid.TryParse(userIdStr, out var userId))
+            return;
 
-        var (role, state) = await _service.JoinGameAsync(id, playerId, preferredColor);
+        await Groups.AddToGroupAsync(
+            Context.ConnectionId,
+            gameIdStr);
+
+        var (role, state) = await _service.JoinGameAsync(
+            gameId,
+            userId,
+            preferredColor);
 
         if (state == null)
         {
-            await Clients.Caller.SendAsync("GameDeleted", "not_found");
+            await Clients.Caller.SendAsync(
+                "GameDeleted",
+                "not_found");
+
             return;
         }
 
-        await Clients.Caller.SendAsync("Init", new { role, state });
+        await Clients.Caller.SendAsync(
+            "Init",
+            new
+            {
+                role,
+                state
+            });
     }
 
-    public async Task MakeMove(string gameIdStr, string playerId, string from, string to)
+    public async Task MakeMove(
+        string gameIdStr,
+        string userIdStr,
+        string from,
+        string to)
     {
-        if (!Guid.TryParse(gameIdStr, out var id))
+        if (!Guid.TryParse(gameIdStr, out var gameId))
             return;
 
-        var state = await _service.MakeMoveAsync(id, new MoveRequestDto(from, to), playerId);
+        if (!Guid.TryParse(userIdStr, out var userId))
+            return;
+
+        var state = await _service.MakeMoveAsync(
+            gameId,
+            new MoveRequestDto(from, to),
+            userId);
 
         if (state == null)
         {
-            await Clients.Caller.SendAsync("GameDeleted", "not_found");
+            await Clients.Caller.SendAsync(
+                "GameDeleted",
+                "not_found");
+
             return;
         }
 
-        await Clients.Group(gameIdStr).SendAsync("ReceiveMove", state);
+        await Clients.Group(gameIdStr)
+            .SendAsync("ReceiveMove", state);
     }
 
     public async Task LeaveGame(string gameIdStr)
