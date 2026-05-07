@@ -1,33 +1,40 @@
-﻿using Microsoft.Extensions.Hosting;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace NetworkWebChess.Services;
 
 public class GameCleanupService : BackgroundService
 {
-    private readonly GameService _service;
-    private readonly GameLifecycleService _lifecycle;
+    private readonly IServiceScopeFactory _scopeFactory;
+    private readonly TimeSpan _ttl = TimeSpan.FromMinutes(45);
 
-    private readonly TimeSpan _ttl = TimeSpan.FromSeconds(30);
-
-    public GameCleanupService(
-        GameService service,
-        GameLifecycleService lifecycle)
+    public GameCleanupService(IServiceScopeFactory scopeFactory)
     {
-        _service = service;
-        _lifecycle = lifecycle;
+        _scopeFactory = scopeFactory;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
+            await Task.Delay(TimeSpan.FromMinutes(10), stoppingToken);
 
-            var expired = _service.GetExpiredGames(_ttl);
-
-            foreach (var id in expired)
+            try
             {
-                await _lifecycle.DeleteGame(id, "ttl");
+                using var scope = _scopeFactory.CreateScope();
+                var gameService = scope.ServiceProvider.GetRequiredService<GameService>();
+                var lifecycle = scope.ServiceProvider.GetRequiredService<GameLifecycleService>();
+
+                var expiredIds = await gameService.GetExpiredGamesAsync(_ttl);
+
+                foreach (var id in expiredIds)
+                {
+                    await lifecycle.DeleteGame(id, "ttl_expired");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Cleanup error: {ex.Message}");
             }
         }
     }

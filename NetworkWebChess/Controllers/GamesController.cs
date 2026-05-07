@@ -10,28 +10,26 @@ public class GamesController : ControllerBase
     private readonly GameService _service;
     private readonly GameLifecycleService _lifecycle;
 
-    public GamesController(
-        GameService service,
-        GameLifecycleService lifecycle)
+    public GamesController(GameService service, GameLifecycleService lifecycle)
     {
         _service = service;
         _lifecycle = lifecycle;
     }
 
     [HttpPost]
-    public IActionResult CreateGame()
+    public async Task<IActionResult> CreateGame()
     {
-        var id = _service.CreateNewGame();
+        var id = await _service.CreateNewGameAsync();
         return Ok(new { gameId = id });
     }
 
     [HttpGet("{gameId}")]
-    public IActionResult GetGame(Guid gameId)
+    public async Task<IActionResult> GetGame(Guid gameId)
     {
-        var state = _service.GetGameState(gameId);
+        var state = await _service.GetGameStateAsync(gameId);
 
         if (state == null)
-            return NotFound();
+            return NotFound(new { message = "Game not found" });
 
         return Ok(state);
     }
@@ -39,7 +37,7 @@ public class GamesController : ControllerBase
     [HttpDelete("{gameId}")]
     public async Task<IActionResult> DeleteGame(Guid gameId)
     {
-        await _lifecycle.DeleteGame(gameId, "rest");
-        return Ok();
+        await _lifecycle.DeleteGame(gameId, "manual_delete");
+        return Ok(new { message = "Game deleted" });
     }
 }

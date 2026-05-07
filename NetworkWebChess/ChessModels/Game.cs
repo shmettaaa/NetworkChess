@@ -1,5 +1,7 @@
 ﻿using NetworkWebChess.ChessModels.ChessPieces;
+using NetworkWebChess.Data.Entities;
 using NetworkWebChess.Dtos;
+using System;
 
 namespace NetworkChess.ChessModels
 {
@@ -27,7 +29,6 @@ namespace NetworkChess.ChessModels
             Board = new Board();
             CurrentPlayer = PieceColor.White;
             Board.ResetCastlingRights();
-
             Touch();
         }
 
@@ -74,26 +75,20 @@ namespace NetworkChess.ChessModels
             if (move.MovingPiece.Color != CurrentPlayer) return false;
 
             var legalMoves = move.MovingPiece.GetLegalMoves(Board);
-
             var realMove = legalMoves.FirstOrDefault(m =>
                 m.To.Row == move.To.Row && m.To.Col == move.To.Col);
 
             if (realMove == null) return false;
 
             Board.MakeMove(realMove);
-
             Touch();
 
-            CurrentPlayer = CurrentPlayer == PieceColor.White
-                ? PieceColor.Black
-                : PieceColor.White;
+            CurrentPlayer = CurrentPlayer == PieceColor.White ? PieceColor.Black : PieceColor.White;
 
             if (Board.IsCheckmate(CurrentPlayer))
             {
                 Status = GameStatus.Finished;
-                GameResult = CurrentPlayer == PieceColor.White
-                    ? "Black wins"
-                    : "White wins";
+                GameResult = CurrentPlayer == PieceColor.White ? "Black wins" : "White wins";
             }
             else if (Board.IsStalemate(CurrentPlayer))
             {
@@ -125,5 +120,54 @@ namespace NetworkChess.ChessModels
                 Board.CanCastleQueenside(CurrentPlayer)
             );
         }
+
+        public GameEntity ToEntity()
+        {
+            return new GameEntity
+            {
+                Id = this.Id,
+                WhitePlayerId = this.WhitePlayerId,
+                BlackPlayerId = this.BlackPlayerId,
+                Status = this.Status.ToString(),
+                GameResult = this.GameResult,
+                CurrentFen = this.Board.ToFen(),
+                CurrentPlayer = this.CurrentPlayer == PieceColor.White ? "White" : "Black",
+                LastActivityUtc = this.LastActivityUtc,
+
+                WhiteKingMoved = this.Board.WhiteKingMoved,
+                BlackKingMoved = this.Board.BlackKingMoved,
+                WhiteKingsideRookMoved = this.Board.WhiteKingsideRookMoved,
+                WhiteQueensideRookMoved = this.Board.WhiteQueensideRookMoved,
+                BlackKingsideRookMoved = this.Board.BlackKingsideRookMoved,
+                BlackQueensideRookMoved = this.Board.BlackQueensideRookMoved,
+
+                EnPassantTarget = this.Board.EnPassantTarget?.ToString()
+            };
+        }
+
+        public void RestoreFromEntity(GameEntity entity)
+        {
+            Id = entity.Id;
+
+            WhitePlayerId = entity.WhitePlayerId;
+            BlackPlayerId = entity.BlackPlayerId;
+
+            Status = Enum.TryParse<GameStatus>(entity.Status, out var status)
+                ? status
+                : GameStatus.WaitingForPlayers;
+
+            GameResult = entity.GameResult;
+
+            CurrentPlayer = entity.CurrentPlayer == "Black"
+                ? PieceColor.Black
+                : PieceColor.White;
+
+            LastActivityUtc = entity.LastActivityUtc;
+
+            Board = Board.FromFen(entity.CurrentFen);
+        }
+
+
+
     }
 }

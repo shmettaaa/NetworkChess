@@ -2,28 +2,24 @@
 using NetworkWebChess.ChessModels.ChessPieces;
 using System;
 using System.Collections.Generic;
-using System.Security.AccessControl;
 using System.Text;
 
 namespace NetworkChess.ChessModels
 {
     public class Board
     {
-
-
         private readonly Piece?[,] pieces;
 
         private Board(bool skipInit)
         {
             pieces = new Piece[8, 8];
         }
+
         public Board()
         {
             pieces = new Piece[8, 8];
             InitializeBoard();
-           
         }
-
 
         private void InitializeBoard()
         {
@@ -35,7 +31,8 @@ namespace NetworkChess.ChessModels
             pieces[0, 5] = new Bishop(new Position { Row = 0, Col = 5 }, PieceColor.Black);
             pieces[0, 6] = new Knight(new Position { Row = 0, Col = 6 }, PieceColor.Black);
             pieces[0, 7] = new Rook(new Position { Row = 0, Col = 7 }, PieceColor.Black);
-            for(int i = 0; i<8; i++)
+
+            for (int i = 0; i < 8; i++)
             {
                 pieces[1, i] = new Pawn(new Position { Row = 1, Col = i }, PieceColor.Black);
             }
@@ -55,16 +52,14 @@ namespace NetworkChess.ChessModels
             }
         }
 
-
         public Piece? GetPiece(Position pos)
         {
             if (pos.Row > 7 || pos.Row < 0 || pos.Col < 0 || pos.Col > 7)
             {
                 throw new ArgumentOutOfRangeException();
             }
-            return pieces[pos.Row, pos.Col];          
+            return pieces[pos.Row, pos.Col];
         }
-
 
         private Position GetKingPosition(PieceColor kingColor)
         {
@@ -79,10 +74,8 @@ namespace NetworkChess.ChessModels
                     }
                 }
             }
-
             throw new InvalidOperationException($"Король цвета {kingColor} не найден на доске");
         }
-
 
         public bool IsInCheck(PieceColor kingColor)
         {
@@ -111,10 +104,8 @@ namespace NetworkChess.ChessModels
                     }
                 }
             }
-
             return false;
         }
-
 
         public Board Clone()
         {
@@ -129,9 +120,7 @@ namespace NetworkChess.ChessModels
                     if (originalPiece != null)
                     {
                         Piece clonedPiece = originalPiece.Clone();
-
                         clone.pieces[r, c] = clonedPiece;
-
                         clonedPiece.BoardPosition = new Position
                         {
                             Row = r,
@@ -140,21 +129,19 @@ namespace NetworkChess.ChessModels
                     }
                 }
             }
+
             clone.CurrentPlayer = this.CurrentPlayer;
-
-            clone.whiteKingMoved = this.whiteKingMoved;
-            clone.blackKingMoved = this.blackKingMoved;
-            clone.whiteKingsideRookMoved = this.whiteKingsideRookMoved;
-            clone.whiteQueensideRookMoved = this.whiteQueensideRookMoved;
-            clone.blackKingsideRookMoved = this.blackKingsideRookMoved;
-            clone.blackQueensideRookMoved = this.blackQueensideRookMoved;
-
+            clone.WhiteKingMoved = this.WhiteKingMoved;
+            clone.BlackKingMoved = this.BlackKingMoved;
+            clone.WhiteKingsideRookMoved = this.WhiteKingsideRookMoved;
+            clone.WhiteQueensideRookMoved = this.WhiteQueensideRookMoved;
+            clone.BlackKingsideRookMoved = this.BlackKingsideRookMoved;
+            clone.BlackQueensideRookMoved = this.BlackQueensideRookMoved;
             clone.EnPassantTarget = this.EnPassantTarget;
             clone.EnPassantPawnPosition = this.EnPassantPawnPosition;
 
             return clone;
         }
-
 
         public void PlacePiece(Piece piece, Position pos)
         {
@@ -162,14 +149,11 @@ namespace NetworkChess.ChessModels
             {
                 throw new ArgumentNullException();
             }
-
             if (pos.Row < 0 || pos.Row > 7 || pos.Col < 0 || pos.Col > 7)
             {
                 throw new ArgumentOutOfRangeException();
             }
-
             pieces[pos.Row, pos.Col] = piece;
-
             piece.BoardPosition = pos;
         }
 
@@ -179,10 +163,8 @@ namespace NetworkChess.ChessModels
             {
                 throw new ArgumentOutOfRangeException();
             }
-
             pieces[pos.Row, pos.Col] = null;
         }
-
 
         public List<Move> GetAllLegalMoves(PieceColor color)
         {
@@ -205,7 +187,6 @@ namespace NetworkChess.ChessModels
                     }
                 }
             }
-
             return allLegalMoves;
         }
 
@@ -215,9 +196,7 @@ namespace NetworkChess.ChessModels
             {
                 return false;
             }
-
             List<Move> allLegalMoves = GetAllLegalMoves(kingColor);
-
             return allLegalMoves.Count == 0;
         }
 
@@ -227,9 +206,7 @@ namespace NetworkChess.ChessModels
             {
                 return false;
             }
-
             List<Move> allLegalMoves = GetAllLegalMoves(kingColor);
-
             return allLegalMoves.Count == 0;
         }
 
@@ -237,17 +214,12 @@ namespace NetworkChess.ChessModels
         {
             if (IsCheckmate(kingColor))
                 return GameState.Checkmate;
-
             if (IsStalemate(kingColor))
                 return GameState.Stalemate;
-
             if (IsInCheck(kingColor))
                 return GameState.Check;
-
             return GameState.Normal;
         }
-
-
 
         public void MakeMove(Move move)
         {
@@ -258,6 +230,25 @@ namespace NetworkChess.ChessModels
 
             if (piece == null)
                 throw new InvalidOperationException("Фигура не найдена.");
+
+            if (move.IsEnPassant)
+            {
+                int direction = piece.Color == PieceColor.White ? 1 : -1;
+
+                Position capturedPawnPos = new Position
+                {
+                    Row = move.To.Row + direction,
+                    Col = move.To.Col
+                };
+
+                RemovePiece(capturedPawnPos);
+            }
+
+            Piece? capturedPiece = GetPiece(move.To);
+            if (capturedPiece != null)
+            {
+                move.SetCapture(capturedPiece);
+            }
 
             if (piece is King)
             {
@@ -276,17 +267,6 @@ namespace NetworkChess.ChessModels
                 }
             }
 
-            if (move.IsEnPassant && EnPassantPawnPosition.HasValue)
-            {
-                RemovePiece(EnPassantPawnPosition.Value);
-            }
-
-            Piece? capturedPiece = GetPiece(move.To);
-            if (capturedPiece != null)
-            {
-                move.SetCapture(capturedPiece);
-            }
-
             if (move.IsCastling)
             {
                 ExecuteCastling(move);
@@ -294,48 +274,71 @@ namespace NetworkChess.ChessModels
 
                 EnPassantTarget = null;
                 EnPassantPawnPosition = null;
-                return;
-            }
-
-            RemovePiece(move.From);
-
-            if (piece is Pawn &&
-                ((piece.Color == PieceColor.White && move.To.Row == 0) ||
-                 (piece.Color == PieceColor.Black && move.To.Row == 7)))
-            {
-                move.SetPromotion();
-                Piece newPiece = CreatePromotionPiece(piece.Color, move.PromotionPieceType, move.To);
-                PlacePiece(newPiece, move.To);
             }
             else
             {
-                PlacePiece(piece, move.To);
-            }
+                RemovePiece(move.From);
 
-            EnPassantTarget = null;
-            EnPassantPawnPosition = null;
-
-            if (piece is Pawn)
-            {
-                int diff = Math.Abs(move.From.Row - move.To.Row);
-
-                if (diff == 2)
+                if (piece is Pawn &&
+                    ((piece.Color == PieceColor.White && move.To.Row == 0) ||
+                     (piece.Color == PieceColor.Black && move.To.Row == 7)))
                 {
-                    int direction = piece.Color == PieceColor.White ? -1 : 1;
-
-                    EnPassantTarget = new Position
-                    {
-                        Row = move.From.Row + direction,
-                        Col = move.From.Col
-                    };
-
-                    EnPassantPawnPosition = move.To;
+                    move.SetPromotion();
+                    Piece newPiece = CreatePromotionPiece(piece.Color, move.PromotionPieceType, move.To);
+                    PlacePiece(newPiece, move.To);
                 }
+                else
+                {
+                    PlacePiece(piece, move.To);
+                }
+
+                // EN PASSANT SET
+                if (piece is Pawn)
+                {
+                    HalfmoveClock = 0;
+
+                    int diff = Math.Abs(move.From.Row - move.To.Row);
+
+                    if (diff == 2)
+                    {
+                        int direction = piece.Color == PieceColor.White ? -1 : 1;
+
+                        EnPassantTarget = new Position
+                        {
+                            Row = move.From.Row + direction,
+                            Col = move.From.Col
+                        };
+                    }
+                    else
+                    {
+                        EnPassantTarget = null;
+                    }
+                }
+                else if (capturedPiece != null)
+                {
+                    HalfmoveClock = 0;
+                    EnPassantTarget = null;
+                }
+                else
+                {
+                    HalfmoveClock++;
+                    EnPassantTarget = null;
+                }
+
+                EnPassantPawnPosition = null;
+
+                UpdateCastlingRights(move);
             }
 
-            UpdateCastlingRights(move);
-        }
+            if (CurrentPlayer == PieceColor.Black)
+            {
+                FullmoveNumber++;
+            }
 
+            CurrentPlayer = CurrentPlayer == PieceColor.White
+                ? PieceColor.Black
+                : PieceColor.White;
+        }
 
         private Piece CreatePromotionPiece(PieceColor color, PieceType type, Position pos)
         {
@@ -345,44 +348,39 @@ namespace NetworkChess.ChessModels
                 PieceType.Rook => new Rook(pos, color),
                 PieceType.Bishop => new Bishop(pos, color),
                 PieceType.Knight => new Knight(pos, color),
-                _ => new Queen(pos, color)   
+                _ => new Queen(pos, color)
             };
         }
 
-
-        //Begining of the Castling Logic
-
+        // Castling Logic
         private bool whiteKingMoved = false;
         private bool blackKingMoved = false;
-
-        private bool whiteKingsideRookMoved = false;   
-        private bool whiteQueensideRookMoved = false;  
-        private bool blackKingsideRookMoved = false;   
+        private bool whiteKingsideRookMoved = false;
+        private bool whiteQueensideRookMoved = false;
+        private bool blackKingsideRookMoved = false;
         private bool blackQueensideRookMoved = false;
-
-
 
         private void UpdateCastlingRights(Move move)
         {
             if (move.MovingPiece is King)
             {
                 if (move.MovingPiece.Color == PieceColor.White)
-                    whiteKingMoved = true;
+                    WhiteKingMoved = true;
                 else
-                    blackKingMoved = true;
+                    BlackKingMoved = true;
             }
 
             if (move.MovingPiece is Rook)
             {
                 if (move.MovingPiece.Color == PieceColor.White)
                 {
-                    if (move.From.Col == 0) whiteQueensideRookMoved = true;  
-                    if (move.From.Col == 7) whiteKingsideRookMoved = true;   
+                    if (move.From.Col == 0) WhiteQueensideRookMoved = true;
+                    if (move.From.Col == 7) WhiteKingsideRookMoved = true;
                 }
-                else 
+                else
                 {
-                    if (move.From.Col == 0) blackQueensideRookMoved = true;  
-                    if (move.From.Col == 7) blackKingsideRookMoved = true;  
+                    if (move.From.Col == 0) BlackQueensideRookMoved = true;
+                    if (move.From.Col == 7) BlackKingsideRookMoved = true;
                 }
             }
 
@@ -390,13 +388,13 @@ namespace NetworkChess.ChessModels
             {
                 if (move.CapturedPiece.Color == PieceColor.White)
                 {
-                    if (move.To.Col == 0) whiteQueensideRookMoved = true;
-                    if (move.To.Col == 7) whiteKingsideRookMoved = true;
+                    if (move.To.Col == 0) WhiteQueensideRookMoved = true;
+                    if (move.To.Col == 7) WhiteKingsideRookMoved = true;
                 }
                 else
                 {
-                    if (move.To.Col == 0) blackQueensideRookMoved = true;
-                    if (move.To.Col == 7) blackKingsideRookMoved = true;
+                    if (move.To.Col == 0) BlackQueensideRookMoved = true;
+                    if (move.To.Col == 7) BlackKingsideRookMoved = true;
                 }
             }
         }
@@ -407,11 +405,11 @@ namespace NetworkChess.ChessModels
 
             if (color == PieceColor.White)
             {
-                if (whiteKingMoved || whiteKingsideRookMoved) return false;
+                if (WhiteKingMoved || WhiteKingsideRookMoved) return false;
             }
             else
             {
-                if (blackKingMoved || blackKingsideRookMoved) return false;
+                if (BlackKingMoved || BlackKingsideRookMoved) return false;
             }
 
             if (GetPiece(new Position { Row = row, Col = 5 }) != null) return false;
@@ -419,13 +417,8 @@ namespace NetworkChess.ChessModels
 
             if (IsInCheck(color)) return false;
 
-            if (WouldBeInCheckAfterMove(color,
-                new Position { Row = row, Col = 4 },
-                new Position { Row = row, Col = 5 })) return false;
-
-            if (WouldBeInCheckAfterMove(color,
-                new Position { Row = row, Col = 4 },
-                new Position { Row = row, Col = 6 })) return false;
+            if (WouldBeInCheckAfterMove(color, new Position { Row = row, Col = 4 }, new Position { Row = row, Col = 5 })) return false;
+            if (WouldBeInCheckAfterMove(color, new Position { Row = row, Col = 4 }, new Position { Row = row, Col = 6 })) return false;
 
             return true;
         }
@@ -434,14 +427,14 @@ namespace NetworkChess.ChessModels
         {
             if (color == PieceColor.White)
             {
-                if (whiteKingMoved || whiteQueensideRookMoved) return false;
+                if (WhiteKingMoved || WhiteQueensideRookMoved) return false;
                 if (GetPiece(new Position { Row = 7, Col = 1 }) != null) return false;
-                if (GetPiece(new Position { Row = 7, Col = 2 }) != null) return false; 
-                if (GetPiece(new Position { Row = 7, Col = 3 }) != null) return false; 
+                if (GetPiece(new Position { Row = 7, Col = 2 }) != null) return false;
+                if (GetPiece(new Position { Row = 7, Col = 3 }) != null) return false;
             }
             else
             {
-                if (blackKingMoved || blackQueensideRookMoved) return false;
+                if (BlackKingMoved || BlackQueensideRookMoved) return false;
                 if (GetPiece(new Position { Row = 0, Col = 1 }) != null) return false;
                 if (GetPiece(new Position { Row = 0, Col = 2 }) != null) return false;
                 if (GetPiece(new Position { Row = 0, Col = 3 }) != null) return false;
@@ -452,27 +445,23 @@ namespace NetworkChess.ChessModels
                                                        new Position { Row = color == PieceColor.White ? 7 : 0, Col = 3 });
         }
 
-
         private bool WouldBeInCheckAfterMove(PieceColor color, Position from, Position to)
         {
             Board tempBoard = this.Clone();
-
             Piece? king = tempBoard.GetPiece(from);
             tempBoard.RemovePiece(from);
             tempBoard.PlacePiece(king!, to);
-
             return tempBoard.IsInCheck(color);
         }
 
         public void ResetCastlingRights()
         {
-            whiteKingMoved = false;
-            blackKingMoved = false;
-
-            whiteKingsideRookMoved = false;
-            whiteQueensideRookMoved = false;
-            blackKingsideRookMoved = false;
-            blackQueensideRookMoved = false;
+            WhiteKingMoved = false;
+            BlackKingMoved = false;
+            WhiteKingsideRookMoved = false;
+            WhiteQueensideRookMoved = false;
+            BlackKingsideRookMoved = false;
+            BlackQueensideRookMoved = false;
         }
 
         private void ExecuteCastling(Move move)
@@ -503,26 +492,17 @@ namespace NetworkChess.ChessModels
             }
         }
 
-
-        //End of Castling Logic
-
-
-
-        //FEN NOTATION
-
+        // FEN NOTATION
         public PieceColor CurrentPlayer { get; set; } = PieceColor.White;
-
-
 
         public string ToFen()
         {
             string fen = BuildPiecePlacement();
             fen += " " + GetActiveColor();
             fen += " " + GetCastlingAvailability();
-            fen += " " + GetEnPassantTarget();      
-            fen += " " + "0";                        
-            fen += " " + "1";                         
-
+            fen += " " + GetEnPassantTarget();
+            fen += " " + HalfmoveClock;
+            fen += " " + FullmoveNumber;
             return fen;
         }
 
@@ -548,7 +528,6 @@ namespace NetworkChess.ChessModels
                             fen += emptyCount;
                             emptyCount = 0;
                         }
-
                         fen += GetPieceFenSymbol(piece);
                     }
                 }
@@ -562,7 +541,6 @@ namespace NetworkChess.ChessModels
                 if (r < 7)
                     fen += "/";
             }
-
             return fen;
         }
 
@@ -591,10 +569,10 @@ namespace NetworkChess.ChessModels
         {
             string castling = "";
 
-            if (!whiteKingMoved && !whiteKingsideRookMoved) castling += "K";
-            if (!whiteKingMoved && !whiteQueensideRookMoved) castling += "Q";
-            if (!blackKingMoved && !blackKingsideRookMoved) castling += "k";
-            if (!blackKingMoved && !blackQueensideRookMoved) castling += "q";
+            if (!WhiteKingMoved && !WhiteKingsideRookMoved) castling += "K";
+            if (!WhiteKingMoved && !WhiteQueensideRookMoved) castling += "Q";
+            if (!BlackKingMoved && !BlackKingsideRookMoved) castling += "k";
+            if (!BlackKingMoved && !BlackQueensideRookMoved) castling += "q";
 
             return string.IsNullOrEmpty(castling) ? "-" : castling;
         }
@@ -609,9 +587,121 @@ namespace NetworkChess.ChessModels
 
             return $"{file}{rank}";
         }
+        public static Board FromFen(string fen)
+        {
+            var parts = fen.Split(' ');
 
-        //END OF FEN NOTATION
+            if (parts.Length < 4)
+                throw new Exception("Invalid FEN");
 
+            var board = new Board(false);
+
+            for (int r = 0; r < 8; r++)
+                for (int c = 0; c < 8; c++)
+                    board.pieces[r, c] = null;
+
+            var rows = parts[0].Split('/');
+
+            for (int r = 0; r < 8; r++)
+            {
+                int col = 0;
+
+                foreach (var ch in rows[r])
+                {
+                    if (char.IsDigit(ch))
+                    {
+                        col += ch - '0';
+                        continue;
+                    }
+
+                    var color = char.IsUpper(ch) ? PieceColor.White : PieceColor.Black;
+
+                    Piece piece = char.ToLower(ch) switch
+                    {
+                        'p' => new Pawn(new Position(), color),
+                        'r' => new Rook(new Position(), color),
+                        'n' => new Knight(new Position(), color),
+                        'b' => new Bishop(new Position(), color),
+                        'q' => new Queen(new Position(), color),
+                        'k' => new King(new Position(), color),
+                        _ => throw new Exception("Invalid FEN char")
+                    };
+
+                    var pos = new Position { Row = r, Col = col };
+                    board.PlacePiece(piece, pos);
+
+                    col++;
+                }
+            }
+
+            board.CurrentPlayer = parts[1] == "w"
+                ? PieceColor.White
+                : PieceColor.Black;
+
+            var castling = parts[2];
+
+            board.WhiteKingMoved = !(castling.Contains('K') || castling.Contains('Q'));
+            board.BlackKingMoved = !(castling.Contains('k') || castling.Contains('q'));
+
+            board.WhiteKingsideRookMoved = !castling.Contains('K');
+            board.WhiteQueensideRookMoved = !castling.Contains('Q');
+
+            board.BlackKingsideRookMoved = !castling.Contains('k');
+            board.BlackQueensideRookMoved = !castling.Contains('q');
+
+            if (parts[3] != "-")
+            {
+                int col = parts[3][0] - 'a';
+                int row = 8 - (parts[3][1] - '0');
+
+                board.EnPassantTarget = new Position
+                {
+                    Row = row,
+                    Col = col
+                };
+
+                Position? foundPawn = null;
+
+                int pawnRowWhite = row + 1;
+                int pawnRowBlack = row - 1;
+
+                if (pawnRowWhite >= 0 && pawnRowWhite <= 7)
+                {
+                    var p = board.GetPiece(new Position { Row = pawnRowWhite, Col = col });
+                    if (p is Pawn)
+                        foundPawn = new Position { Row = pawnRowWhite, Col = col };
+                }
+
+                if (pawnRowBlack >= 0 && pawnRowBlack <= 7)
+                {
+                    var p = board.GetPiece(new Position { Row = pawnRowBlack, Col = col });
+                    if (p is Pawn)
+                        foundPawn = new Position { Row = pawnRowBlack, Col = col };
+                }
+
+                board.EnPassantPawnPosition = foundPawn;
+            }
+            else
+            {
+                board.EnPassantTarget = null;
+                board.EnPassantPawnPosition = null;
+            }
+
+            board.HalfmoveClock = parts.Length > 4 ? int.Parse(parts[4]) : 0;
+
+            board.FullmoveNumber = parts.Length > 5 ? int.Parse(parts[5]) : 1;
+
+            return board;
+        }
+
+
+
+        public bool WhiteKingMoved { get; private set; } = false;
+        public bool BlackKingMoved { get; private set; } = false;
+        public bool WhiteKingsideRookMoved { get; private set; } = false;
+        public bool WhiteQueensideRookMoved { get; private set; } = false;
+        public bool BlackKingsideRookMoved { get; private set; } = false;
+        public bool BlackQueensideRookMoved { get; private set; } = false;
 
         public Position? EnPassantTarget { get; private set; }
         public Position? EnPassantPawnPosition { get; private set; }
@@ -619,9 +709,8 @@ namespace NetworkChess.ChessModels
 
 
 
-
-
-
+        public int HalfmoveClock { get; private set; } = 0;
+        public int FullmoveNumber { get; private set; } = 1;
 
 
     }

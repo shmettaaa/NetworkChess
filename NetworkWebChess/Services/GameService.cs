@@ -1,5 +1,7 @@
 ﻿using NetworkChess.ChessModels;
 using NetworkWebChess.ChessModels.ChessPieces;
+using NetworkWebChess.Data.Entities;
+using NetworkWebChess.Data.Repositories;
 using NetworkWebChess.Dtos;
 
 namespace NetworkWebChess.Services;
@@ -7,44 +9,73 @@ namespace NetworkWebChess.Services;
 public class GameService
 {
     private readonly GameStore _store;
+    private readonly IGameRepository _repository;
 
-    public GameService(GameStore store)
+    public GameService(GameStore store, IGameRepository repository)
     {
         _store = store;
+        _repository = repository;
     }
 
-    public Guid CreateNewGame()
+    public async Task<Guid> CreateNewGameAsync()
     {
         var game = new Game();
+
         _store.Add(game);
+
+        await _repository.AddAsync(game.ToEntity());
+
         return game.Id;
     }
 
-    public GameStateDto? GetGameState(Guid id)
+    public async Task<Game?> GetOrLoadGameAsync(Guid id)
     {
         var game = _store.Get(id);
+        if (game != null)
+            return game;
+
+        var entity = await _repository.GetAsync(id);
+        if (entity == null)
+            return null;
+
+        game = new Game();
+        game.RestoreFromEntity(entity);
+
+        _store.Add(game);
+
+        return game;
+    }
+
+    public async Task<GameStateDto?> GetGameStateAsync(Guid id)
+    {
+        var game = await GetOrLoadGameAsync(id);
         return game?.GetGameState();
     }
 
-    public (string? role, GameStateDto? state) JoinGame(
+    public async Task<(string role, GameStateDto? state)> JoinGameAsync(
         Guid id,
         string playerId,
         string? preferredColor)
     {
-        var game = _store.Get(id);
-        if (game == null) return (null, null);
+        var game = await GetOrLoadGameAsync(id);
+        if (game == null)
+            return ("not_found", null);
 
         var role = game.JoinGame(playerId, preferredColor);
+
+        await Save(game);
+
         return (role, game.GetGameState());
     }
 
-    public GameStateDto? MakeMove(
+    public async Task<GameStateDto?> MakeMoveAsync(
         Guid id,
         MoveRequestDto request,
         string playerId)
     {
-        var game = _store.Get(id);
-        if (game == null) return null;
+        var game = await GetOrLoadGameAsync(id);
+        if (game == null)
+            return null;
 
         if (!game.IsPlayersTurn(playerId))
             return game.GetGameState();
@@ -58,19 +89,52 @@ public class GameService
 
         var move = new Move(piece, from, to);
 
-        game.ExecuteMove(move);
+        var success = game.ExecuteMove(move);
+
+        if (!success)
+            return game.GetGameState();
+
+        await Save(game);
 
         return game.GetGameState();
     }
 
-    public List<Guid> GetExpiredGames(TimeSpan ttl)
+    private async Task Save(Game game)
     {
-        var now = DateTime.UtcNow;
+        var entity = await _repository.GetAsync(game.Id);
 
-        return _store.GetAll()
-            .Where(g => now - g.LastActivityUtc > ttl)
-            .Select(g => g.Id)
-            .ToList();
+        if (entity == null)
+        {
+            await _repository.AddAsync(game.ToEntity());
+            return;
+        }
+
+        var updated = game.ToEntity();
+
+        entity.WhitePlayerId = updated.WhitePlayerId;
+        entity.BlackPlayerId = updated.BlackPlayerId;
+        entity.Status = updated.Status;
+        entity.GameResult = updated.GameResult;
+        entity.CurrentFen = updated.CurrentFen;
+        entity.CurrentPlayer = updated.CurrentPlayer;
+        entity.LastActivityUtc = updated.LastActivityUtc;
+
+        entity.WhiteKingMoved = updated.WhiteKingMoved;
+        entity.BlackKingMoved = updated.BlackKingMoved;
+        entity.WhiteKingsideRookMoved = updated.WhiteKingsideRookMoved;
+        entity.WhiteQueensideRookMoved = updated.WhiteQueensideRookMoved;
+        entity.BlackKingsideRookMoved = updated.BlackKingsideRookMoved;
+        entity.BlackQueensideRookMoved = updated.BlackQueensideRookMoved;
+
+        entity.EnPassantTarget = updated.EnPassantTarget;
+
+        await _repository.UpdateAsync(entity);
+    }
+
+    public async Task<List<Guid>> GetExpiredGamesAsync(TimeSpan ttl)
+    {
+        var expired = await _repository.GetExpiredGamesAsync(ttl);
+        return expired.Select(x => x.Id).ToList();
     }
 
     private Position Parse(string square)
