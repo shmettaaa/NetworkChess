@@ -18,9 +18,9 @@ public class GameHub : Hub
     }
 
     public async Task JoinGame(
-        string gameIdStr,
-        string userIdStr,
-        string? preferredColor)
+    string gameIdStr,
+    string userIdStr,
+    string? preferredColor)
     {
         if (!Guid.TryParse(gameIdStr, out var gameId))
             return;
@@ -53,6 +53,12 @@ public class GameHub : Hub
                 role,
                 state
             });
+
+        await Clients.Group(gameIdStr)
+            .SendAsync(
+                "PlayersUpdated",
+                state
+            );
     }
 
     public async Task MakeMove(

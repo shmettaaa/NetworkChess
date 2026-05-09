@@ -34,7 +34,10 @@ namespace NetworkWebChess.Migrations
                     b.Property<bool>("BlackKingsideRookMoved")
                         .HasColumnType("boolean");
 
-                    b.Property<string>("BlackPlayerId")
+                    b.Property<Guid?>("BlackPlayerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("BlackPlayerNickname")
                         .HasColumnType("text");
 
                     b.Property<bool>("BlackQueensideRookMoved")
@@ -70,7 +73,10 @@ namespace NetworkWebChess.Migrations
                     b.Property<bool>("WhiteKingsideRookMoved")
                         .HasColumnType("boolean");
 
-                    b.Property<string>("WhitePlayerId")
+                    b.Property<Guid?>("WhitePlayerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("WhitePlayerNickname")
                         .HasColumnType("text");
 
                     b.Property<bool>("WhiteQueensideRookMoved")
@@ -79,6 +85,38 @@ namespace NetworkWebChess.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Games");
+                });
+
+            modelBuilder.Entity("NetworkWebChess.Data.Entities.UserEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Nickname")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("SessionToken")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Nickname")
+                        .IsUnique();
+
+                    b.HasIndex("SessionToken")
+                        .IsUnique();
+
+                    b.ToTable("Users");
                 });
 #pragma warning restore 612, 618
         }

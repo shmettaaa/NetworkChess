@@ -1,6 +1,7 @@
 ﻿namespace NetworkWebChess.Dtos;
 
 public record AuthResponseDto(
-    string SessionToken,
+    Guid UserId,
+    string Token,
     string Nickname
 );

@@ -18,7 +18,7 @@ public class AuthService
     }
 
     public async Task<AuthResponseDto?> RegisterAsync(
-        RegisterRequestDto request)
+    RegisterRequestDto request)
     {
         var existing = await _users.GetByNicknameAsync(request.Nickname);
 
@@ -38,13 +38,14 @@ public class AuthService
         await _users.AddAsync(user);
 
         return new AuthResponseDto(
+            user.Id,
             token,
             user.Nickname
         );
     }
 
     public async Task<AuthResponseDto?> LoginAsync(
-        LoginRequestDto request)
+    LoginRequestDto request)
     {
         var user = await _users.GetByNicknameAsync(request.Nickname);
 
@@ -59,6 +60,7 @@ public class AuthService
         await _users.UpdateAsync(user);
 
         return new AuthResponseDto(
+            user.Id,
             user.SessionToken,
             user.Nickname
         );

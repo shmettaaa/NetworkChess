@@ -11,4 +11,5 @@ public class UserEntity
     public string SessionToken { get; set; } = null!;
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
 }

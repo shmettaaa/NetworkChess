@@ -142,7 +142,9 @@ namespace NetworkChess.ChessModels
                 GameResult,
                 Board.IsInCheck(CurrentPlayer),
                 Board.CanCastleKingside(CurrentPlayer),
-                Board.CanCastleQueenside(CurrentPlayer)
+                Board.CanCastleQueenside(CurrentPlayer),
+                WhitePlayerNickname,
+                BlackPlayerNickname
             );
         }
 
