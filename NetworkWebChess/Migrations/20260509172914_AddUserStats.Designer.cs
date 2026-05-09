@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NetworkWebChess.Data;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace NetworkWebChess.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260509172914_AddUserStats")]
+    partial class AddUserStats
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -96,15 +99,6 @@ namespace NetworkWebChess.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("Draws")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("GamesPlayed")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Losses")
-                        .HasColumnType("integer");
-
                     b.Property<string>("Nickname")
                         .IsRequired()
                         .HasColumnType("text");
@@ -116,9 +110,6 @@ namespace NetworkWebChess.Migrations
                     b.Property<string>("SessionToken")
                         .IsRequired()
                         .HasColumnType("text");
-
-                    b.Property<int>("Wins")
-                        .HasColumnType("integer");
 
                     b.HasKey("Id");
 

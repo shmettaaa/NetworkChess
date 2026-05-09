@@ -48,4 +48,27 @@ public class AuthController : ControllerBase
 
         return Ok(result);
     }
+
+    [HttpGet("me")]
+    public async Task<IActionResult> Me(
+    [FromHeader(Name = "X-Session-Token")]
+    string? token)
+    {
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            return Unauthorized();
+        }
+
+        var profile =
+            await _auth.GetProfileAsync(token);
+
+        if (profile == null)
+        {
+            return Unauthorized();
+        }
+
+        return Ok(profile);
+    }
+
+
 }

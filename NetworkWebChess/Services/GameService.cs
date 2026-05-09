@@ -28,7 +28,9 @@ public class GameService
 
         _store.Add(game);
 
-        await _repository.AddAsync(game.ToEntity());
+        await _repository.AddAsync(
+            game.ToEntity()
+        );
 
         return game.Id;
     }
@@ -40,12 +42,14 @@ public class GameService
         if (game != null)
             return game;
 
-        var entity = await _repository.GetAsync(id);
+        var entity =
+            await _repository.GetAsync(id);
 
         if (entity == null)
             return null;
 
         game = new Game();
+
         game.RestoreFromEntity(entity);
 
         _store.Add(game);
@@ -55,7 +59,8 @@ public class GameService
 
     public async Task<GameStateDto?> GetGameStateAsync(Guid id)
     {
-        var game = await GetOrLoadGameAsync(id);
+        var game =
+            await GetOrLoadGameAsync(id);
 
         return game?.GetGameState();
     }
@@ -65,24 +70,31 @@ public class GameService
         Guid userId,
         string? preferredColor)
     {
-        var game = await GetOrLoadGameAsync(gameId);
+        var game =
+            await GetOrLoadGameAsync(gameId);
 
         if (game == null)
             return ("not_found", null);
 
-        var user = await _auth.GetUserByIdAsync(userId);
+        var user =
+            await _auth.GetUserByIdAsync(userId);
 
         if (user == null)
             return ("unauthorized", null);
 
-        var role = game.JoinGame(
-            user.Id,
-            user.Nickname,
-            preferredColor);
+        var role =
+            game.JoinGame(
+                user.Id,
+                user.Nickname,
+                preferredColor
+            );
 
         await Save(game);
 
-        return (role, game.GetGameState());
+        return (
+            role,
+            game.GetGameState()
+        );
     }
 
     public async Task<GameStateDto?> MakeMoveAsync(
@@ -90,7 +102,8 @@ public class GameService
         MoveRequestDto request,
         Guid userId)
     {
-        var game = await GetOrLoadGameAsync(gameId);
+        var game =
+            await GetOrLoadGameAsync(gameId);
 
         if (game == null)
             return null;
@@ -101,68 +114,160 @@ public class GameService
         var from = Parse(request.From);
         var to = Parse(request.To);
 
-        var piece = game.Board.GetPiece(from);
+        var piece =
+            game.Board.GetPiece(from);
 
         if (piece == null)
             return game.GetGameState();
 
-        var move = new Move(piece, from, to);
+        var move =
+            new Move(piece, from, to);
 
-        var success = game.ExecuteMove(move);
+        var success =
+            game.ExecuteMove(move);
 
         if (!success)
             return game.GetGameState();
 
         await Save(game);
 
+        if (game.IsGameOver)
+        {
+            await UpdateStats(game);
+        }
+
         return game.GetGameState();
+    }
+
+    private async Task UpdateStats(Game game)
+    {
+        var entity =
+            await _repository.GetAsync(game.Id);
+
+        if (entity == null)
+            return;
+
+        if (entity.WhitePlayerId == null ||
+            entity.BlackPlayerId == null)
+        {
+            return;
+        }
+
+        var white =
+            await _auth.GetUserByIdAsync(
+                entity.WhitePlayerId.Value
+            );
+
+        var black =
+            await _auth.GetUserByIdAsync(
+                entity.BlackPlayerId.Value
+            );
+
+        if (white == null || black == null)
+            return;
+
+        white.GamesPlayed++;
+        black.GamesPlayed++;
+
+        if (entity.GameResult == "Draw")
+        {
+            white.Draws++;
+            black.Draws++;
+        }
+        else if (
+            entity.GameResult?.Contains("White")
+            == true)
+        {
+            white.Wins++;
+            black.Losses++;
+        }
+        else if (
+            entity.GameResult?.Contains("Black")
+            == true)
+        {
+            black.Wins++;
+            white.Losses++;
+        }
+
+        await _auth.UpdateUserAsync(white);
+        await _auth.UpdateUserAsync(black);
     }
 
     private async Task Save(Game game)
     {
-        var entity = await _repository.GetAsync(game.Id);
+        var entity =
+            await _repository.GetAsync(game.Id);
 
         if (entity == null)
         {
-            await _repository.AddAsync(game.ToEntity());
+            await _repository.AddAsync(
+                game.ToEntity()
+            );
+
             return;
         }
 
         var updated = game.ToEntity();
 
-        entity.WhitePlayerId = updated.WhitePlayerId;
-        entity.BlackPlayerId = updated.BlackPlayerId;
+        entity.WhitePlayerId =
+            updated.WhitePlayerId;
 
-        entity.WhitePlayerNickname = updated.WhitePlayerNickname;
-        entity.BlackPlayerNickname = updated.BlackPlayerNickname;
+        entity.BlackPlayerId =
+            updated.BlackPlayerId;
 
-        entity.Status = updated.Status;
-        entity.GameResult = updated.GameResult;
+        entity.WhitePlayerNickname =
+            updated.WhitePlayerNickname;
 
-        entity.CurrentFen = updated.CurrentFen;
-        entity.CurrentPlayer = updated.CurrentPlayer;
+        entity.BlackPlayerNickname =
+            updated.BlackPlayerNickname;
 
-        entity.LastActivityUtc = updated.LastActivityUtc;
+        entity.Status =
+            updated.Status;
 
-        entity.WhiteKingMoved = updated.WhiteKingMoved;
-        entity.BlackKingMoved = updated.BlackKingMoved;
+        entity.GameResult =
+            updated.GameResult;
 
-        entity.WhiteKingsideRookMoved = updated.WhiteKingsideRookMoved;
-        entity.WhiteQueensideRookMoved = updated.WhiteQueensideRookMoved;
+        entity.CurrentFen =
+            updated.CurrentFen;
 
-        entity.BlackKingsideRookMoved = updated.BlackKingsideRookMoved;
-        entity.BlackQueensideRookMoved = updated.BlackQueensideRookMoved;
+        entity.CurrentPlayer =
+            updated.CurrentPlayer;
 
-        entity.EnPassantTarget = updated.EnPassantTarget;
+        entity.LastActivityUtc =
+            updated.LastActivityUtc;
+
+        entity.WhiteKingMoved =
+            updated.WhiteKingMoved;
+
+        entity.BlackKingMoved =
+            updated.BlackKingMoved;
+
+        entity.WhiteKingsideRookMoved =
+            updated.WhiteKingsideRookMoved;
+
+        entity.WhiteQueensideRookMoved =
+            updated.WhiteQueensideRookMoved;
+
+        entity.BlackKingsideRookMoved =
+            updated.BlackKingsideRookMoved;
+
+        entity.BlackQueensideRookMoved =
+            updated.BlackQueensideRookMoved;
+
+        entity.EnPassantTarget =
+            updated.EnPassantTarget;
 
         await _repository.UpdateAsync(entity);
     }
 
     public async Task<List<Guid>> GetExpiredGamesAsync(TimeSpan ttl)
     {
-        var expired = await _repository.GetExpiredGamesAsync(ttl);
+        var expired =
+            await _repository.GetExpiredGamesAsync(ttl);
 
-        return expired.Select(x => x.Id).ToList();
+        return expired
+            .Select(x => x.Id)
+            .ToList();
     }
 
     private Position Parse(string square)
