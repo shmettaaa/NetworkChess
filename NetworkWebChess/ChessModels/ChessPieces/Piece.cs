@@ -30,8 +30,9 @@ namespace NetworkWebChess.ChessModels.ChessPieces
         public abstract Piece Clone();
 
 
-
-        public abstract List<Move> GetPotentialMoves(Board board);
+        public abstract List<Move> GetPotentialMoves(
+            Board board,
+            bool includeCastling = true);
 
         public List<Move> GetLegalMoves(Board board)
         {

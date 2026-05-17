@@ -1,59 +1,123 @@
 ﻿using NetworkChess.ChessModels;
-using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace NetworkWebChess.ChessModels.ChessPieces
 {
     internal class King : Piece
     {
-        public King(Position pos, PieceColor color) : base(pos, color) { }
-
-
-        public override List<Move> GetPotentialMoves(Board board)
+        public King(Position pos, PieceColor color)
+            : base(pos, color)
         {
-            List<Move> moves = new List<Move>();
+        }
+
+        public override List<Move> GetPotentialMoves(
+            Board board,
+            bool includeCastling = true)
+        {
+            List<Move> moves =
+                new List<Move>();
+
             int x = BoardPosition.Row;
             int y = BoardPosition.Col;
 
-            int[] dx = { -1, -1, -1, 0, 0, 1, 1, 1 };
-            int[] dy = { -1, 0, 1, -1, 1, -1, 0, 1 };
+            int[] dx =
+            {
+                -1, -1, -1,
+                 0,  0,
+                 1,  1,  1
+            };
+
+            int[] dy =
+            {
+                -1, 0, 1,
+                -1, 1,
+                -1, 0, 1
+            };
 
             for (int i = 0; i < 8; i++)
             {
                 int newRow = x + dx[i];
                 int newCol = y + dy[i];
 
-                if (newRow < 0 || newRow > 7 || newCol < 0 || newCol > 7)
-                    continue;
-
-                Position target = new Position { Row = newRow, Col = newCol };
-                Piece? pieceOnTarget = board.GetPiece(target);
-
-                if (pieceOnTarget == null || pieceOnTarget.Color != Color)
+                if (newRow < 0 ||
+                    newRow > 7 ||
+                    newCol < 0 ||
+                    newCol > 7)
                 {
-                    Move move = new Move(this, BoardPosition, target);
+                    continue;
+                }
+
+                Position target =
+                    new Position
+                    {
+                        Row = newRow,
+                        Col = newCol
+                    };
+
+                Piece? pieceOnTarget =
+                    board.GetPiece(target);
+
+                if (pieceOnTarget == null ||
+                    pieceOnTarget.Color != Color)
+                {
+                    Move move =
+                        new Move(
+                            this,
+                            BoardPosition,
+                            target);
+
                     if (pieceOnTarget != null)
-                        move.SetCapture(pieceOnTarget);
+                    {
+                        move.SetCapture(
+                            pieceOnTarget);
+                    }
 
                     moves.Add(move);
                 }
             }
 
-            if (board.CanCastleKingside(Color))
+            // ИСПРАВЛЕНО
+            if (includeCastling)
             {
-                Position kingTo = new Position { Row = x, Col = 6 };   
-                Move castlingMove = new Move(this, BoardPosition, kingTo);
-                castlingMove.SetCastling();
-                moves.Add(castlingMove);
-            }
+                if (board.CanCastleKingside(Color))
+                {
+                    Position kingTo =
+                        new Position
+                        {
+                            Row = x,
+                            Col = 6
+                        };
 
-            if (board.CanCastleQueenside(Color))
-            {
-                Position kingTo = new Position { Row = x, Col = 2 };  
-                Move castlingMove = new Move(this, BoardPosition, kingTo);
-                castlingMove.SetCastling();
-                moves.Add(castlingMove);
+                    Move castlingMove =
+                        new Move(
+                            this,
+                            BoardPosition,
+                            kingTo);
+
+                    castlingMove.SetCastling();
+
+                    moves.Add(castlingMove);
+                }
+
+                if (board.CanCastleQueenside(Color))
+                {
+                    Position kingTo =
+                        new Position
+                        {
+                            Row = x,
+                            Col = 2
+                        };
+
+                    Move castlingMove =
+                        new Move(
+                            this,
+                            BoardPosition,
+                            kingTo);
+
+                    castlingMove.SetCastling();
+
+                    moves.Add(castlingMove);
+                }
             }
 
             return moves;
@@ -61,11 +125,9 @@ namespace NetworkWebChess.ChessModels.ChessPieces
 
         public override Piece Clone()
         {
-            return new King(BoardPosition, Color);
+            return new King(
+                BoardPosition,
+                Color);
         }
-
-
-
-
     }
 }

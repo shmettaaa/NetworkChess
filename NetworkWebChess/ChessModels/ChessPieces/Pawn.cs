@@ -10,7 +10,7 @@ namespace NetworkWebChess.ChessModels.ChessPieces
 
         public Pawn(Position pos, PieceColor color) : base(pos, color) { }
 
-        public override List<Move> GetPotentialMoves(Board board)
+        public override List<Move> GetPotentialMoves(Board board, bool includeCastling = true)
         {
             List<Move> moves = new List<Move>();
             int x = BoardPosition.Row;

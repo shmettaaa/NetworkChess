@@ -90,7 +90,10 @@ namespace NetworkChess.ChessModels
 
                     if (attacker != null && attacker.Color == opponentColor)
                     {
-                        List<Move> potentialMoves = attacker.GetPotentialMoves(this);
+                        List<Move> potentialMoves =
+                                attacker.GetPotentialMoves(
+                                        this,
+                                        false);
 
                         for (int i = 0; i < potentialMoves.Count; i++)
                         {
@@ -301,17 +304,25 @@ namespace NetworkChess.ChessModels
 
                     if (diff == 2)
                     {
-                        int direction = piece.Color == PieceColor.White ? -1 : 1;
+                        int direction =
+                            piece.Color == PieceColor.White
+                                ? -1
+                                : 1;
 
-                        EnPassantTarget = new Position
-                        {
-                            Row = move.From.Row + direction,
-                            Col = move.From.Col
-                        };
+                        EnPassantTarget =
+                            new Position
+                            {
+                                Row = move.From.Row + direction,
+                                Col = move.From.Col
+                            };
+
+                        EnPassantPawnPosition =
+                            move.To;
                     }
                     else
                     {
                         EnPassantTarget = null;
+                        EnPassantPawnPosition = null;
                     }
                 }
                 else if (capturedPiece != null)
@@ -384,17 +395,35 @@ namespace NetworkChess.ChessModels
                 }
             }
 
-            if (move.CapturedPiece is Rook)
+            if (move.CapturedPiece is Rook rook)
             {
-                if (move.CapturedPiece.Color == PieceColor.White)
+                if (rook.Color == PieceColor.White)
                 {
-                    if (move.To.Col == 0) WhiteQueensideRookMoved = true;
-                    if (move.To.Col == 7) WhiteKingsideRookMoved = true;
+                    if (move.To.Row == 7 &&
+                        move.To.Col == 0)
+                    {
+                        WhiteQueensideRookMoved = true;
+                    }
+
+                    if (move.To.Row == 7 &&
+                        move.To.Col == 7)
+                    {
+                        WhiteKingsideRookMoved = true;
+                    }
                 }
                 else
                 {
-                    if (move.To.Col == 0) BlackQueensideRookMoved = true;
-                    if (move.To.Col == 7) BlackKingsideRookMoved = true;
+                    if (move.To.Row == 0 &&
+                        move.To.Col == 0)
+                    {
+                        BlackQueensideRookMoved = true;
+                    }
+
+                    if (move.To.Row == 0 &&
+                        move.To.Col == 7)
+                    {
+                        BlackKingsideRookMoved = true;
+                    }
                 }
             }
         }
